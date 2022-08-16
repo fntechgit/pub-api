@@ -1,0 +1,13 @@
+env/
+.idea/
+.pytest_cache/
+__pycache__/
+build/
+dist/
+.egg-info/
+.env
+.env.test
+*.mo
+*.log
+static/
+db.sqlite3
