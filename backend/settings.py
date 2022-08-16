@@ -38,6 +38,11 @@ DEBUG = False if ENV == 'production' else True
 
 ALLOWED_HOSTS = ['*']
 
+# https://docs.djangoproject.com/en/3.0/howto/error-reporting/
+# string should have this format
+# name1,email1|name2,email2|....|nameN,emailN
+ADMINS = [tuple(x.split(',')) for x in os.getenv('ADMINS', []).split('|')]
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -166,7 +171,7 @@ CACHES = {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "PASSWORD": os.getenv("REDIS_PASSWORD")
         },
-        "KEY_PREFIX": "marketing_api"
+        "KEY_PREFIX": "pub_api"
     }
 }
 
