@@ -304,7 +304,7 @@ OAUTH2 = {
         'SECRET': os.getenv('OAUTH2_CLIENT_SECRET'),
         'ENDPOINTS': {
             # user-roles
-            '/api/v1/summit/{id}/entity-updates': {
+            '/api/v1/summits/{summit_id}/entity-updates': {
                 'post': {
                     'name': _('PublishEntityUpdate'),
                     'desc': _('Publish Entity Update'),
