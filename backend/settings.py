@@ -209,7 +209,7 @@ LOGGING = {
         'console_out': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'formatter': 'default',
+            'formatter': 'console',
             'stream': sys.stdout
         },
         'file': {
