@@ -1,1 +1,2 @@
 from .pub_entities import EntityUpdatesCreateAPIView
+from .openapi_schema import PubApiSchemaGenerator
