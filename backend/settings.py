@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 from dotenv import load_dotenv
 from django.utils.translation import ugettext_lazy as _
 
@@ -205,6 +206,12 @@ LOGGING = {
             'formatter': 'console',
             'filters': ['require_debug_true'],
         },
+        'console_out': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'default',
+            'stream': sys.stdout
+        },
         'file': {
             'formatter': 'file',
             'class': 'logging.FileHandler',
@@ -220,27 +227,27 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['file', 'console_out'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
             'propagate': True,
         },
         'api': {
-            'handlers': ['file'],
+            'handlers': ['file', 'console_out'],
             'level': os.getenv('API_LOG_LEVEL', 'DEBUG'),
             'propagate': True,
         },
         'serializers': {
-            'handlers': ['file'],
+            'handlers': ['file', 'console_out'],
             'level': os.getenv('API_LOG_LEVEL', 'DEBUG'),
             'propagate': True,
         },
         'oauth2': {
-            'handlers': ['file', 'console'],
+            'handlers': ['file', 'console_out'],
             'level': os.getenv('OAUTH2_LOG_LEVEL', 'DEBUG'),
             'propagate': True,
         },
         'jobs': {
-            'handlers': ['file', 'console'],
+            'handlers': ['file', 'console_out'],
             'level': os.getenv('CRON_JOBS_LOG_LEVEL', 'DEBUG'),
             'propagate': True,
         },
