@@ -4,15 +4,33 @@ import logging
 from ..utils.inject import inject
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.serializers import ValidationError
+import redis
+import json
+import traceback
+from ..utils import config
 
 
 # Serializer without model
 class EntityUpdateWriteSerializer(serializers.Serializer):
 
     @inject
-    def __init__(self, service: AbstractPubService,  *args, **kwargs):
+    def __init__(self, service: AbstractPubService, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.service = service
+        self.redis_client = None
+        try:
+            self.redis_client = redis.StrictRedis \
+                    (
+                    config("REDIS_PUB.HOST"),
+                    config("REDIS_PUB.PORT"),
+                    password=config("REDIS_PUB.PASSWORD", None),
+                    charset="utf-8",
+                    decode_responses=True,
+                    db=config("REDIS_PUB.DB")
+                )
+        except:
+            self.redis_client = None
+            logging.getLogger('api').warning(traceback.format_exc())
 
     entity_id = serializers.IntegerField(required=True)
     entity_type = serializers.CharField(required=True, max_length=255)
@@ -26,7 +44,7 @@ class EntityUpdateWriteSerializer(serializers.Serializer):
         if entity_id is None:
             raise ValidationError(_("entity_id is mandatory."))
 
-        if not isinstance( entity_id, int):
+        if not isinstance(entity_id, int):
             raise ValidationError(_("entity_id should be integer."))
 
         if entity_type is None:
@@ -50,7 +68,8 @@ class EntityUpdateWriteSerializer(serializers.Serializer):
         valid_entity_operators = ["INSERT", "UPDATE", "DELETE"]
 
         if entity_operator not in valid_entity_operators:
-            raise ValidationError(_('entity_operator is not valid ({values})'.format(values=' '.join(map(str, valid_entity_operators)))))
+            raise ValidationError(
+                _('entity_operator is not valid ({values})'.format(values=' '.join(map(str, valid_entity_operators)))))
 
         return data
 
@@ -72,11 +91,16 @@ class EntityUpdateWriteSerializer(serializers.Serializer):
             if not res:
                 raise Exception("SUPABASE Exception")
 
+            # publish to redis
+
+            if self.redis_client:
+                self.redis_client.publish(config('REDIS_PUB.CHANNEL'), json.dumps(res))
+
             return {"summit_id": summit_id,
                     "entity_id": entity_id,
                     "entity_type": entity_type,
-                    "entity_operator" : entity_operator}
+                    "entity_operator": entity_operator}
+
         except Exception as e:
             logging.getLogger('api').error(e)
             raise
-
