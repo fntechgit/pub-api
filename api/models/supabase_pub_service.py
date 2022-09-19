@@ -27,8 +27,9 @@ class SupaBasePubService(AbstractPubService):
             result = self.supabase \
                 .table("summit_entity_updates").insert(
                 {"summit_id": summit_id, "entity_id": entity_id, "entity_type": entity_type, "entity_op": op}).execute()
-            return len(result.data) > 0
-
+            if len(result.data) > 0:
+                return result.data[0]
+            return None
         except:
             logging.getLogger('api').error(traceback.format_exc())
             raise Exception('SUPABASE error')

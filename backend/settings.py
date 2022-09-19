@@ -324,3 +324,11 @@ SUPABASE = {
     'URL': os.getenv('SUPABASE_URL'),
     'KEY': os.getenv('SUPABASE_KEY')
 };
+
+REDIS_PUB = {
+    'HOST': os.getenv('REDIS_PUB_HOST'),
+    'PORT': os.getenv('REDIS_PUB_PORT'),
+    'PASSWORD': os.getenv('REDIS_PUB_PASSWORD'),
+    'DB': os.getenv('REDIS_PUB_DB', 0),
+    'CHANNEL': os.getenv('REDIS_PUB_CHANNEL', 'entity_updates'),
+}
