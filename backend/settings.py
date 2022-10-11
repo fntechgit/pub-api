@@ -332,3 +332,13 @@ REDIS_PUB = {
     'DB': os.getenv('REDIS_PUB_DB', 0),
     'CHANNEL': os.getenv('REDIS_PUB_CHANNEL', 'entity_updates'),
 }
+
+RABBIT = {
+    'HOST': os.getenv('RABBIT_HOST'),
+    'PORT': os.getenv('RABBIT_PORT', 5672),
+    'EXCHANGE': os.getenv('RABBIT_EXCHANGE'),
+    'QUEUE': os.getenv('RABBIT_QUEUE'),
+    'VIRTUAL_HOST': os.getenv('RABBIT_VIRTUAL_HOST'),
+    'USER': os.getenv('RABBIT_USER'),
+    'PASSWORD': os.getenv('RABBIT_PASSWORD'),
+}
