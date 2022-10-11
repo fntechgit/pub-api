@@ -8,6 +8,9 @@ import sys
 
 from api.utils import config
 
+from phpserialize import unserialize
+from phpserialize import phpobject
+
 
 class Command(BaseCommand):
     help = 'Runs Queue listener'
@@ -30,11 +33,37 @@ class Command(BaseCommand):
             logging.getLogger('listener').error(traceback.format_exc())
 
     @staticmethod
+    def php_serialized_to_dict(serialized):
+
+        output = unserialize(bytes(serialized, 'utf-8'), object_hook=phpobject)
+
+        output = output._asdict()
+
+        output = {
+            key.decode(): val.decode() if isinstance(val, bytes) else val
+            for key, val in output.items()
+        }
+
+        return output
+
+    @staticmethod
     def callback(channel, method, header, body):
-        logging.getLogger('listener').info('receiving data')
-        print(body)
-        data = json.loads(body)
-        print(data)
+        try:
+            logging.getLogger('listener').info('receiving data {data}'.format(data=body))
+            data = json.loads(body)
+            command = data['data']['command']
+            command_name = data['data']['commandName']
+            logging.getLogger('listener').info('command {command_name}'.format(command_name=command_name))
+            dict = Command.php_serialized_to_dict(command)
+            # received a novelty
+            # summit_id
+            # entity_id
+            # entity_type
+            # operator (INSERT, UPDATE, DELETE)
+            # here publish real time update to redis
+            # and trigger celery job to rebuild CDN json files
+        except:
+            logging.getLogger('listener').error(traceback.format_exc())
 
     def handle(self, *args, **kwargs):
         try:
