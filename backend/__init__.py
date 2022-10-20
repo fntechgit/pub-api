@@ -1,5 +1,6 @@
 import os
 
+from .celery import celery_app
 from dotenv import load_dotenv
 
 CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -10,3 +11,5 @@ if env:
 
 ENV_FILE = os.path.join(CURRENT_PATH, filename)
 load_dotenv(ENV_FILE)
+
+__all__ = ['celery_app']

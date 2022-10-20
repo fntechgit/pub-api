@@ -69,3 +69,7 @@ python manage.py runserver
 sudo lsof -t -i tcp:8000 | xargs kill -9
 
 # dump data 
+
+# start Celery worker process
+
+celery -A backend worker -l info
