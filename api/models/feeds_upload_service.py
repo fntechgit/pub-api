@@ -1,6 +1,8 @@
+import json
 import os
 
 import boto3
+import redis
 
 from .abstract_feeds_upload_service import AbstractFeedsUploadService
 
@@ -10,6 +12,22 @@ import traceback
 
 
 class FeedsUploadService(AbstractFeedsUploadService):
+
+    def __init__(self):
+        super().__init__()
+        self.redis_client = None
+        try:
+            self.redis_client = redis.StrictRedis(
+                config("REDIS_PUB.HOST"),
+                config("REDIS_PUB.PORT"),
+                password=config("REDIS_PUB.PASSWORD", None),
+                charset="utf-8",
+                decode_responses=True,
+                db=config("REDIS_PUB.DB")
+            )
+        except:
+            self.redis_client = None
+            logging.getLogger('api').warning(traceback.format_exc())
 
     def upload(self, summit_id: int):
         try:
@@ -23,7 +41,9 @@ class FeedsUploadService(AbstractFeedsUploadService):
                 aws_secret_access_key=config("STORAGE.SECRET_ACCESS_KEY"),
             )
 
-            show_feeds_dir_path = config('LOCAL_SHOW_FEEDS_DIR_PATH')
+            show_feeds_dir_path = os.path.join(config('LOCAL_SHOW_FEEDS_DIR_PATH'), summit_id.__str__())
+
+            responses = []
 
             for path in os.listdir(show_feeds_dir_path):
                 # check if current path is a file
@@ -31,13 +51,18 @@ class FeedsUploadService(AbstractFeedsUploadService):
                     continue
 
                 with open(os.path.join(show_feeds_dir_path, path), 'rb') as file_contents:
-                    response = client.put_object(
-                        Bucket=config("STORAGE.BUCKET_NAME"),
-                        Key=path,
+                    responses += client.put_object(
+                        Bucket=f'{config("STORAGE.BUCKET_NAME")}',
+                        Key=f'{summit_id}/{path}',
                         Body=file_contents,
                     )
-                    logging.getLogger('api').info(f'FeedsUploadService upload - response {response}')
+                    logging.getLogger('api').info(f'FeedsUploadService uploading {summit_id}/{path}')
+
+            # publish to redis
+
+            if self.redis_client:
+                self.redis_client.publish(config('REDIS_PUB.CHANNEL'), json.dumps(responses))
 
         except Exception:
             logging.getLogger('api').error(traceback.format_exc())
-            raise Exception('S3 error')
+            raise Exception('FeedsUploadService::upload error')

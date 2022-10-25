@@ -2,7 +2,6 @@ from injector import Module, singleton
 
 from api.models.abstract_feeds_upload_service import AbstractFeedsUploadService
 from api.models.abstract_feeds_download_service import AbstractFeedsDownloadService
-from api.models.feeds_download_service import FeedsDownloadService
 from api.security.abstract_access_token_service import AbstractAccessTokenService
 from api.security.access_token_service import AccessTokenService
 from api.models.feeds_upload_service import FeedsUploadService
@@ -23,5 +22,5 @@ class ApiAppModule(Module):
         feeds_download_service = AbstractFeedsDownloadService()
         binder.bind(AbstractFeedsDownloadService, to=feeds_download_service, scope=singleton)
 
-        feeds_upload_service = AbstractFeedsUploadService()
+        feeds_upload_service = FeedsUploadService()
         binder.bind(AbstractFeedsUploadService, to=feeds_upload_service, scope=singleton)

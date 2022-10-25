@@ -21,48 +21,60 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
         super().__init__()
         self.access_token_service = access_token_service
 
-    async def __downloadEvents(self, summit_id: int, access_token: str, page=1, results=[]):
+    async def __get_page(self, endpoint: str, params: any, page: int):
+        response = requests.get(endpoint, params=params)
+        return {'page_number': page, 'page_data': response.json()}
+
+    async def __get_remaining_pages(self, endpoint: str, params: any, last_page: int):
+        result = await asyncio.gather(*[self.__get_page(endpoint, params, page) for page in range(2, last_page + 1)])
+        ordered_result = sorted(result, key=lambda d: d['page_number'])
+        pages = []
+        for r in ordered_result:
+            pages.append(r['page_data'])
+        return pages
+
+    async def __download_events(self, summit_id: int, access_token: str):
         try:
-            response = requests.get(
-                f"{config('SUMMIT_API_BASE_URL', None)}/api/v1/summits/{summit_id}/events/published",
-                params={
-                    "access_token": access_token,
-                    "per_page": 50,
-                    "page": 1,
-                    "expand": 'slides, links, videos, media_uploads, type, track, track.allowed_access_levels, '
-                              'location, location.venue, location.floor, speakers, moderator, sponsors, '
-                              'current_attendance, groups, rsvp_template, tags',
-                }
-            )
+            endpoint = f"{config('SUMMIT_API_BASE_URL', None)}/api/v1/summits/{summit_id}/events/published"
+            params = {
+                "access_token": access_token,
+                "per_page": 50,
+                "page": 1,
+                "expand": 'slides, links, videos, media_uploads, type, track, track.allowed_access_levels, '
+                          'location, location.venue, location.floor, speakers, moderator, sponsors, '
+                          'current_attendance, groups, rsvp_template, tags',
+            }
+            response = requests.get(endpoint, params=params)
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                return await self.__downloadEvents(summit_id, access_token, page + 1, results + data)
+                return data + await self.__get_remaining_pages(endpoint, params, resp['last_page'])
 
-            return results + data
-        except Exception:
-            logging.getLogger('api').error(traceback.format_exc())
+            return data
+        except Exception as ex:
+            logging.getLogger('api').error(ex)
+            raise Exception('__download_events error')
 
-    async def __downloadSpeakers(self, summit_id: int, access_token: str, page=1, results=[]):
+    async def __download_speakers(self, summit_id: int, access_token: str):
         try:
-            response = requests.get(
-                f"{config('SUMMIT_API_BASE_URL', None)}/api/v1/summits/{summit_id}/speakers/on-schedule",
-                params={
-                    "access_token": access_token,
-                    "per_page": 30,
-                    "page": page
-                }
-            )
+            endpoint = f"{config('SUMMIT_API_BASE_URL', None)}/api/v1/summits/{summit_id}/speakers/on-schedule"
+            params = {
+                "access_token": access_token,
+                "page": 1,
+                "per_page": 30
+            }
+            response = requests.get(endpoint, params=params)
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                return await self.__downloadSpeakers(summit_id, access_token, page + 1, results + data)
+                return data + await self.__get_remaining_pages(endpoint, params, resp['last_page'])
 
-            return results + data
-        except Exception:
-            logging.getLogger('api').error(traceback.format_exc())
+            return data
+        except Exception as ex:
+            logging.getLogger('api').error(ex)
+            raise Exception('__download_speakers error')
 
-    async def __downloadSummit(self, summit_id: int, access_token: str):
+    async def __download_summit(self, summit_id: int, access_token: str):
         try:
             response = requests.get(
                 f"{config('SUMMIT_API_BASE_URL', None)}/api/v1/summits/{summit_id}",
@@ -75,48 +87,54 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
                 }
             )
             return response.json()
-        except Exception:
-            logging.getLogger('api').error(traceback.format_exc())
+        except Exception as ex:
+            logging.getLogger('api').error(ex)
+            raise Exception('__download_summit error')
 
-    async def __downloadSummitExtraQuestions(self, summit_id: int, access_token: str):
+    async def __download_summit_extra_questions(self, summit_id: int, access_token: str):
         try:
-            response = requests.get(
-                f"{config('SUMMIT_API_BASE_URL', None)}/api/v1/summits/{summit_id}/order-extra-questions",
-                params={
-                    'access_token': access_token,
-                    'filter[]': ['class==MainQuestion', 'usage==Ticket'],
-                    'expand': '*sub_question_rules,*sub_question,*values',
-                    'order': 'order',
-                    'page': 1,
-                    'per_page': 100,
-                }
-            )
-            return response.json()
-        except Exception:
-            logging.getLogger('api').error(traceback.format_exc())
-
-    async def __downloadVoteablePresentations(self, summit_id: int, access_token: str, page=1, results=[]):
-        try:
-            response = requests.get(
-                f"{config('SUMMIT_API_BASE_URL', None)}/api/v1/summits/{summit_id}/presentations/voteable",
-                params={
-                    'access_token': access_token,
-                    'filter': 'published==1',
-                    'page': page,
-                    'per_page': 50,
-                    'expand': 'slides, links, videos, media_uploads, type, track, track.allowed_access_levels, '
-                              'location, location.venue, location.floor, speakers, moderator, sponsors, '
-                              'current_attendance, groups, rsvp_template, tags'
-                }
-            )
+            endpoint = f"{config('SUMMIT_API_BASE_URL', None)}/api/v1/summits/{summit_id}/order-extra-questions"
+            params = {
+                'access_token': access_token,
+                'filter[]': ['class==MainQuestion', 'usage==Ticket'],
+                'expand': '*sub_question_rules,*sub_question,*values',
+                'order': 'order',
+                'page': 1,
+                'per_page': 100,
+            }
+            response = requests.get(endpoint, params=params)
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                return await self.__downloadVoteablePresentations(summit_id, access_token, page + 1, results + data)
+                return data + await self.__get_remaining_pages(endpoint, params, resp['last_page'])
 
-            return results + data
-        except Exception:
-            logging.getLogger('api').error(traceback.format_exc())
+            return data
+        except Exception as ex:
+            logging.getLogger('api').error(ex)
+            raise Exception('__download_summit_extra_questions error')
+
+    async def __download_voteable_presentations(self, summit_id: int, access_token: str):
+        try:
+            endpoint = f"{config('SUMMIT_API_BASE_URL', None)}/api/v1/summits/{summit_id}/presentations/voteable"
+            params = {
+                'access_token': access_token,
+                'filter': 'published==1',
+                'page': 1,
+                'per_page': 50,
+                'expand': 'slides, links, videos, media_uploads, type, track, track.allowed_access_levels, '
+                          'location, location.venue, location.floor, speakers, moderator, sponsors, '
+                          'current_attendance, groups, rsvp_template, tags'
+            }
+            response = requests.get(endpoint, params=params)
+            resp = response.json()
+            data = resp['data']
+            if resp['current_page'] < resp['last_page']:
+                return data + await self.__get_remaining_pages(endpoint, params, resp['last_page'])
+
+            return data
+        except Exception as ex:
+            logging.getLogger('api').error(ex)
+            raise Exception('__download_voteable_presentations error')
 
     async def __dump_all_for_summit(self, summit_id: int, access_token: str):
 
@@ -124,14 +142,14 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             .info(f'FeedsDownloadService __dump_all_for_summit: summit_id {summit_id}')
 
         events, speakers, summit, extra_questions, presentations = await asyncio.gather(
-            self.__downloadEvents(summit_id, access_token),
-            self.__downloadSpeakers(summit_id, access_token),
-            self.__downloadSummit(summit_id, access_token),
-            self.__downloadSummitExtraQuestions(summit_id, access_token),
-            self.__downloadVoteablePresentations(summit_id, access_token)
+            self.__download_events(summit_id, access_token),
+            self.__download_speakers(summit_id, access_token),
+            self.__download_summit(summit_id, access_token),
+            self.__download_summit_extra_questions(summit_id, access_token),
+            self.__download_voteable_presentations(summit_id, access_token)
         )
 
-        show_feeds_dir_path = config('LOCAL_SHOW_FEEDS_DIR_PATH')
+        show_feeds_dir_path = os.path.join(config('LOCAL_SHOW_FEEDS_DIR_PATH'), summit_id.__str__())
 
         if not os.path.exists(show_feeds_dir_path):
             os.makedirs(show_feeds_dir_path)
