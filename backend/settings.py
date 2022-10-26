@@ -227,6 +227,11 @@ LOGGING = {
             'level': os.getenv('API_LOG_LEVEL', 'DEBUG'),
             'propagate': True,
         },
+        'listener': {
+            'handlers': ['file', 'console_out'],
+            'level': os.getenv('LISTENER_LOG_LEVEL', 'DEBUG'),
+            'propagate': True,
+        },
         'serializers': {
             'handlers': ['file', 'console_out'],
             'level': os.getenv('API_LOG_LEVEL', 'DEBUG'),
@@ -323,7 +328,7 @@ DEV_EMAIL = os.getenv('DEV_EMAIL')
 SUPABASE = {
     'URL': os.getenv('SUPABASE_URL'),
     'KEY': os.getenv('SUPABASE_KEY')
-};
+}
 
 REDIS_PUB = {
     'HOST': os.getenv('REDIS_PUB_HOST'),

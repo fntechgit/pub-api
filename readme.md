@@ -68,4 +68,6 @@ python manage.py runserver
 
 sudo lsof -t -i tcp:8000 | xargs kill -9
 
-# dump data 
+# queue listener
+
+python manage.py listener

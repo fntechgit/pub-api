@@ -4,7 +4,8 @@ from api.security.abstract_access_token_service import AbstractAccessTokenServic
 from api.security.access_token_service import AccessTokenService
 from api.models.supabase_pub_service import SupaBasePubService
 from api.models.abstract_pub_service import AbstractPubService
-
+from api.models.redis_ws_pubs_service import RedisWSPubService
+from api.models.abstract_ws_pub_service import AbstractWSPubService
 
 # define here all root ioc bindings
 class ApiAppModule(Module):
@@ -15,3 +16,6 @@ class ApiAppModule(Module):
 
         supabase_pub_service = SupaBasePubService()
         binder.bind(AbstractPubService, to=supabase_pub_service, scope=singleton )
+
+        redis_pub_service = RedisWSPubService()
+        binder.bind(AbstractWSPubService, to=redis_pub_service, scope=singleton)

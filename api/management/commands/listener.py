@@ -4,33 +4,22 @@ import pika
 import logging
 
 import traceback
-import sys
+
+from pika.exceptions import ConnectionClosedByBroker, AMQPChannelError, AMQPConnectionError
 
 from api.utils import config
 
 from phpserialize import unserialize
 from phpserialize import phpobject
 
+QUEUE_EVENT_NAME = 'App\\Jobs\\PublishScheduleEntityLifeCycleEvent'
+
 
 class Command(BaseCommand):
-    help = 'Runs Queue listener'
+    help = 'Runs Queue listener (RabbitMQ)'
 
     def __init__(self):
         super().__init__()
-        try:
-            credentials = pika.PlainCredentials(config("RABBIT.USER"), config("RABBIT.PASSWORD"), )
-            parameters = pika.ConnectionParameters \
-                    (
-                    host=config("RABBIT.HOST"),
-                    port=config("RABBIT.PORT"),
-                    virtual_host=config("RABBIT.VIRTUAL_HOST"),
-                    credentials=credentials,
-                    heartbeat=600,
-                    blocked_connection_timeout=300
-                )
-            self.connection = pika.BlockingConnection(parameters)
-        except:
-            logging.getLogger('listener').error(traceback.format_exc())
 
     @staticmethod
     def php_serialized_to_dict(serialized):
@@ -54,37 +43,69 @@ class Command(BaseCommand):
             command = data['data']['command']
             command_name = data['data']['commandName']
             logging.getLogger('listener').info('command {command_name}'.format(command_name=command_name))
-            dict = Command.php_serialized_to_dict(command)
-            # received a novelty
-            # summit_id
-            # entity_id
-            # entity_type
-            # operator (INSERT, UPDATE, DELETE)
-            # here publish real time update to redis
-            # and trigger celery job to rebuild CDN json files
+            if command_name == QUEUE_EVENT_NAME:
+                dict = Command.php_serialized_to_dict(command)
+                # received a novelty
+                # summit_id
+                # entity_id
+                # entity_type
+                # entity_operator (INSERT, UPDATE, DELETE)
+
+                entity_op = dict['entity_operator']
+                summit_id = dict['summit_id']
+                entity_id = dict['entity_id']
+                entity_type = dict['entity_type']
+
+                logging.getLogger('listener').info('command {command_name} entity_op {entity_op} summit_id {summit_id} entity_id {entity_id}'.format(
+                    command_name=command_name, entity_op=entity_op, summit_id=summit_id, entity_id={entity_id},
+                    entity_type={entity_type}))
+
+                # and trigger celery job to rebuild CDN json files
         except:
             logging.getLogger('listener').error(traceback.format_exc())
 
     def handle(self, *args, **kwargs):
-        try:
-            print("Running Queue listener")
-            channel = self.connection.channel()
+        credentials = pika.PlainCredentials(config("RABBIT.USER"), config("RABBIT.PASSWORD") )
+        while True:
+            try:
+                parameters = pika.ConnectionParameters \
+                        (
+                        host=config("RABBIT.HOST"),
+                        port=config("RABBIT.PORT"),
+                        virtual_host=config("RABBIT.VIRTUAL_HOST"),
+                        credentials=credentials,
+                        heartbeat=600,
+                        blocked_connection_timeout=300
+                    )
+                connection = pika.BlockingConnection(parameters)
+                print("Running Queue listener")
+                channel = connection.channel()
 
-            channel.exchange_declare(exchange=config("RABBIT.EXCHANGE"), exchange_type='fanout', durable=True,
-                                     auto_delete=True)
-            result = channel.queue_declare(queue=config("RABBIT.QUEUE"), exclusive=False, auto_delete=True,
-                                           durable=True)
+                channel.exchange_declare(exchange=config("RABBIT.EXCHANGE"), exchange_type='fanout', durable=True,
+                                         auto_delete=False)
+                result = channel.queue_declare(queue=config("RABBIT.QUEUE"), exclusive=False, auto_delete=False,
+                                               durable=True)
 
-            queue_name = result.method.queue
+                queue_name = result.method.queue
 
-            channel.queue_bind(exchange=config("RABBIT.EXCHANGE"), queue=queue_name)
+                channel.queue_bind(exchange=config("RABBIT.EXCHANGE"), queue=queue_name)
 
-            channel.basic_consume(queue_name, on_message_callback=self.callback, auto_ack=True)
+                channel.basic_consume(queue_name, on_message_callback=self.callback, auto_ack=True)
 
-            print("Started Consuming...")
-            channel.start_consuming()
-        except KeyboardInterrupt:
-            print("Exiting command ...")
-
-            self.connection.close()
-            sys.exit()
+                print("Started Consuming...")
+                try:
+                    channel.start_consuming()
+                except KeyboardInterrupt:
+                    print("Exiting command ...")
+                    channel.stop_consuming()
+                    connection.close()
+                    break
+            except ConnectionClosedByBroker:
+                continue
+            except AMQPChannelError as err:
+                print("Caught a channel error: {}, stopping...".format(err))
+                break
+                # Recover on all other connection errors
+            except AMQPConnectionError:
+                print("Connection was closed, retrying...")
+                continue
