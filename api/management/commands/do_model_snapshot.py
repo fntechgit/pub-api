@@ -1,8 +1,8 @@
 from django.core.management.base import BaseCommand, CommandError
 from django_injector import inject
 
-from api.models.feeds_download_service import FeedsDownloadService
-from api.models.feeds_upload_service import FeedsUploadService
+from api.models.abstract_feeds_download_service import AbstractFeedsDownloadService
+from api.models.abstract_feeds_upload_service import AbstractFeedsUploadService
 
 DOWNLOAD = 'download'
 UPLOAD = 'upload'
@@ -13,7 +13,9 @@ class Command(BaseCommand):
     help = 'Upload summit models json to S3'
 
     @inject
-    def __init__(self, feeds_download_service: FeedsDownloadService, feeds_upload_service: FeedsUploadService):
+    def __init__(self,
+                 feeds_download_service: AbstractFeedsDownloadService,
+                 feeds_upload_service: AbstractFeedsUploadService):
         super().__init__()
         self.feeds_download_service = feeds_download_service
         self.feeds_upload_service = feeds_upload_service

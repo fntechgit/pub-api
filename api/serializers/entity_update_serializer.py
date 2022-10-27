@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from ..models import AbstractPubService
+from ..models import AbstractWSPubService
 import logging
 from ..utils.inject import inject
 from django.utils.translation import ugettext_lazy as _
@@ -14,23 +15,10 @@ from ..utils import config
 class EntityUpdateWriteSerializer(serializers.Serializer):
 
     @inject
-    def __init__(self, service: AbstractPubService, *args, **kwargs):
+    def __init__(self, service: AbstractPubService, ws_service:AbstractWSPubService, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.service = service
-        self.redis_client = None
-        try:
-            self.redis_client = redis.StrictRedis \
-                    (
-                    config("REDIS_PUB.HOST"),
-                    config("REDIS_PUB.PORT"),
-                    password=config("REDIS_PUB.PASSWORD", None),
-                    charset="utf-8",
-                    decode_responses=True,
-                    db=config("REDIS_PUB.DB")
-                )
-        except:
-            self.redis_client = None
-            logging.getLogger('api').warning(traceback.format_exc())
+        self.ws_service = ws_service
 
     entity_id = serializers.IntegerField(required=True)
     entity_type = serializers.CharField(required=True, max_length=255)
@@ -91,10 +79,9 @@ class EntityUpdateWriteSerializer(serializers.Serializer):
             if not res:
                 raise Exception("SUPABASE Exception")
 
-            # publish to redis
+            # publish to WS
 
-            if self.redis_client:
-                self.redis_client.publish(config('REDIS_PUB.CHANNEL'), json.dumps(res))
+            self.ws_service.pub(summit_id, entity_id, entity_type, entity_operator)
 
             return {"summit_id": summit_id,
                     "entity_id": entity_id,

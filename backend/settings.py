@@ -224,6 +224,11 @@ LOGGING = {
             'level': os.getenv('API_LOG_LEVEL', 'DEBUG'),
             'propagate': True,
         },
+        'listener': {
+            'handlers': ['file', 'console_out'],
+            'level': os.getenv('LISTENER_LOG_LEVEL', 'DEBUG'),
+            'propagate': True,
+        },
         'serializers': {
             'handlers': ['file', 'console_out'],
             'level': os.getenv('API_LOG_LEVEL', 'DEBUG'),
@@ -332,12 +337,21 @@ SUPABASE = {
 
 REDIS_PUB = {
     'HOST': os.getenv('REDIS_PUB_HOST'),
-    'PORT': os.getenv('REDIS_PUB_PORT'),
-    'PASSWORD': os.getenv('REDIS_PUB_PASSWORD'),
+    'PORT': os.getenv('REDIS_PUB_PORT', 6379),
+    'PASSWORD': os.getenv('REDIS_PUB_PASSWORD', None),
     'DB': os.getenv('REDIS_PUB_DB', 0),
     'CHANNEL': os.getenv('REDIS_PUB_CHANNEL', 'entity_updates'),
 }
 
+RABBIT = {
+    'HOST': os.getenv('RABBIT_HOST'),
+    'PORT': os.getenv('RABBIT_PORT', 5672),
+    'EXCHANGE': os.getenv('RABBIT_EXCHANGE'),
+    'QUEUE': os.getenv('RABBIT_QUEUE'),
+    'VIRTUAL_HOST': os.getenv('RABBIT_VIRTUAL_HOST'),
+    'USER': os.getenv('RABBIT_USER'),
+    'PASSWORD': os.getenv('RABBIT_PASSWORD'),
+}
 
 
 # Celery config
@@ -359,3 +373,4 @@ STORAGE = {
 }
 
 DEFAULT_FILE_STORAGE = os.getenv('STATICFILES_STORAGE')
+

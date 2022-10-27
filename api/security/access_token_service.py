@@ -1,5 +1,6 @@
 import logging
 import sys
+from typing import Any
 
 import requests
 from django.contrib.auth.models import AnonymousUser
@@ -51,17 +52,23 @@ class AccessTokenService(AbstractAccessTokenService):
 
         return AnonymousUser, cached_token_info
 
-    def get_access_token(self) -> str:
-        response = requests.post(
-            f"{config('OAUTH2.IDP.BASE_URL', None)}/{config('OAUTH2.IDP.TOKEN_ENDPOINT', None)}",
-            auth=(config('OAUTH2.CONTENT_SNAPSHOT_CLIENT.ID', None), config('OAUTH2.CONTENT_SNAPSHOT_CLIENT.SECRET', None),),
-            verify=False if config('DEBUG', False) else True,
-            allow_redirects=False,
-            data={
-                "grant_type": "client_credentials",
-                "scope": config('OAUTH2.CONTENT_SNAPSHOT_CLIENT.SCOPES', None)
-            }
-        )
-
-        return response.json()['access_token']
+    def get_access_token(self) -> Any | None:
+        try:
+            response = requests.post(
+                f"{config('OAUTH2.IDP.BASE_URL', None)}/{config('OAUTH2.IDP.TOKEN_ENDPOINT', None)}",
+                auth=(config('OAUTH2.CONTENT_SNAPSHOT_CLIENT.ID', None), config('OAUTH2.CONTENT_SNAPSHOT_CLIENT.SECRET', None),),
+                verify=False if config('DEBUG', False) else True,
+                allow_redirects=False,
+                data={
+                    "grant_type": "client_credentials",
+                    "scope": config('OAUTH2.CONTENT_SNAPSHOT_CLIENT.SCOPES', None)
+                }
+            )
+            return response.json()['access_token']
+        except requests.exceptions.RequestException as e:
+            logging.getLogger('oauth2').error(e)
+            return None
+        except:
+            logging.getLogger('oauth2').error(sys.exc_info())
+            return None
 
