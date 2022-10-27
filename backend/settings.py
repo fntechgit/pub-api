@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'django_injector',
     'api.apps.ApiConfig',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -85,7 +86,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
@@ -95,7 +95,6 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -115,7 +114,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
@@ -128,7 +126,6 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
@@ -293,6 +290,7 @@ LOCALE_PATHS = [
 OAUTH2 = {
     'IDP': {
         'BASE_URL': os.getenv('OAUTH2_IDP_BASE_URL'),
+        'TOKEN_ENDPOINT': os.getenv('OAUTH2_IDP_TOKEN_ENDPOINT', 'oauth2/token'),
         'INTROSPECTION_ENDPOINT': os.getenv('OAUTH2_IDP_INTROSPECTION_ENDPOINT')
     },
     'CLIENT': {
@@ -308,8 +306,15 @@ OAUTH2 = {
                 }
             },
         }
+    },
+    'CONTENT_SNAPSHOT_CLIENT': {
+        'ID': os.getenv('CONTENT_SNAPSHOT_OAUTH2_CLIENT_ID'),
+        'SECRET': os.getenv('CONTENT_SNAPSHOT_OAUTH2_CLIENT_SECRET'),
+        'SCOPES': os.getenv('CONTENT_SNAPSHOT_OAUTH2_SCOPES')
     }
 }
+
+SUMMIT_API_BASE_URL = os.getenv('SUMMIT_API_BASE_URL')
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "backend/media"),
@@ -347,3 +352,25 @@ RABBIT = {
     'USER': os.getenv('RABBIT_USER'),
     'PASSWORD': os.getenv('RABBIT_PASSWORD'),
 }
+
+
+# Celery config
+CELERY_BROKER_URL = f"redis://:{os.getenv('REDIS_PUB_PASSWORD')}@{os.getenv('REDIS_PUB_HOST')}:{os.getenv('REDIS_PUB_PORT')}/{os.getenv('REDIS_PUB_DB', 0)}"
+CELERY_RESULT_BACKEND = f"redis://:{os.getenv('REDIS_PUB_PASSWORD')}@{os.getenv('REDIS_PUB_HOST')}:{os.getenv('REDIS_PUB_PORT')}/{os.getenv('REDIS_PUB_DB', 0)}"
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
+
+LOCAL_SHOW_FEEDS_DIR_PATH = os.path.join(BASE_DIR, os.getenv('LOCAL_SHOW_FEEDS_DIR_NAME'))
+
+# S3 config
+STORAGE = {
+    'ACCESS_KEY_ID': os.getenv('STORAGE_ACCESS_KEY_ID'),
+    'SECRET_ACCESS_KEY': os.getenv('STORAGE_SECRET_ACCESS_KEY'),
+    'REGION_NAME': os.getenv('STORAGE_REGION_NAME'),
+    'ENDPOINT_URL': os.getenv('STORAGE_ENDPOINT_URL'),
+    'BUCKET_NAME': os.getenv('STORAGE_BUCKET_NAME')
+}
+
+DEFAULT_FILE_STORAGE = os.getenv('STATICFILES_STORAGE')
+

@@ -11,3 +11,4 @@ dist/
 *.log
 static/
 db.sqlite3
+show-feeds-dev/
