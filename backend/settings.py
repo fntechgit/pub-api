@@ -305,6 +305,13 @@ OAUTH2 = {
                     'scopes': os.getenv('OAUTH2_SCOPE_PUBLISH_ENTITY_UPDATES'),
                 }
             },
+            '/api/v1/summits/{summit_id}/feeds/show_models_feed': {
+                'post': {
+                    'name': _('FeedShowEntities'),
+                    'desc': _('Feed Show Entities'),
+                    'scopes': os.getenv('OAUTH2_SCOPE_SHOW_ENTITIES_FEED'),
+                }
+            },
         }
     },
     'CONTENT_SNAPSHOT_CLIENT': {

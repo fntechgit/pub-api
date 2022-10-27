@@ -28,8 +28,9 @@ class EntityFeedAPIView(ViewSet):
     def feed(self, request, summit_id, *args, **kwargs):
         try:
             logging.getLogger('api').debug(f'calling EntityFeedAPIView::feed for summit_id {summit_id}')
-            create_model_snapshot.delay(summit_id, self.feeds_download_service, self.feeds_upload_service)
+            create_model_snapshot.delay(summit_id)
             return Response(status=status.HTTP_201_CREATED)
-        except:
+        except Exception as e:
+            logging.getLogger('api').error(e)
             logging.getLogger('api').error(traceback.format_exc())
             return Response('server error', status=status.HTTP_500_INTERNAL_SERVER_ERROR)

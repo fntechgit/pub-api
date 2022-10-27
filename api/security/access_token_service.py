@@ -52,7 +52,7 @@ class AccessTokenService(AbstractAccessTokenService):
 
         return AnonymousUser, cached_token_info
 
-    def get_access_token(self) -> Any | None:
+    def get_access_token(self) -> str:
         try:
             response = requests.post(
                 f"{config('OAUTH2.IDP.BASE_URL', None)}/{config('OAUTH2.IDP.TOKEN_ENDPOINT', None)}",
@@ -67,8 +67,8 @@ class AccessTokenService(AbstractAccessTokenService):
             return response.json()['access_token']
         except requests.exceptions.RequestException as e:
             logging.getLogger('oauth2').error(e)
-            return None
+            return ''
         except:
             logging.getLogger('oauth2').error(sys.exc_info())
-            return None
+            return ''
 

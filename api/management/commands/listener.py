@@ -7,6 +7,7 @@ import traceback
 
 from pika.exceptions import ConnectionClosedByBroker, AMQPChannelError, AMQPConnectionError
 
+from api.tasks import create_model_snapshot
 from api.utils import config
 
 from phpserialize import unserialize
@@ -56,11 +57,15 @@ class Command(BaseCommand):
                 entity_id = dict['entity_id']
                 entity_type = dict['entity_type']
 
-                logging.getLogger('listener').info('command {command_name} entity_op {entity_op} summit_id {summit_id} entity_id {entity_id}'.format(
-                    command_name=command_name, entity_op=entity_op, summit_id=summit_id, entity_id={entity_id},
-                    entity_type={entity_type}))
+                logging.getLogger('listener')\
+                    .info(f'command {command_name} entity_op {entity_op} summit_id {summit_id} '
+                          f'entity_id {entity_id} entity_type {entity_type}')
 
-                # and trigger celery job to rebuild CDN json files
+                # trigger celery job to rebuild CDN json files
+                if entity_type == 'Summit':
+                    summit_id = entity_id
+
+                create_model_snapshot.delay(summit_id)
         except:
             logging.getLogger('listener').error(traceback.format_exc())
 

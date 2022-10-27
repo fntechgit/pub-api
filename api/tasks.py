@@ -2,15 +2,19 @@ import logging
 
 from celery import shared_task
 
-from api.models.abstract_feeds_download_service import AbstractFeedsDownloadService
-from api.models.abstract_feeds_upload_service import AbstractFeedsUploadService
+from api.models import RedisWSPubService
+from api.models.feeds_download_service import FeedsDownloadService
+from api.models.feeds_upload_service import FeedsUploadService
+from api.security.access_token_service import AccessTokenService
 
 
 @shared_task
-def create_model_snapshot(summit_id: int,
-                          feeds_download_service: AbstractFeedsDownloadService,
-                          feeds_upload_service: AbstractFeedsUploadService):
+def create_model_snapshot(summit_id: int):
     logging.getLogger('api').debug(f'calling create_model_snapshot task for summit {summit_id}...')
+
+    feeds_download_service = FeedsDownloadService(AccessTokenService())
+    feeds_upload_service = FeedsUploadService(RedisWSPubService())
+
     feeds_download_service.download(summit_id)
     feeds_upload_service.upload(summit_id)
 

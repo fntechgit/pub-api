@@ -5,17 +5,13 @@ import logging
 from ..utils.inject import inject
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.serializers import ValidationError
-import redis
-import json
-import traceback
-from ..utils import config
 
 
 # Serializer without model
 class EntityUpdateWriteSerializer(serializers.Serializer):
 
     @inject
-    def __init__(self, service: AbstractPubService, ws_service:AbstractWSPubService, *args, **kwargs):
+    def __init__(self, service: AbstractPubService, ws_service: AbstractWSPubService, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.service = service
         self.ws_service = ws_service

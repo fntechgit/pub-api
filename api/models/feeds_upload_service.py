@@ -1,9 +1,8 @@
-import json
 import os
 
 import boto3
-import redis
 
+from . import AbstractWSPubService
 from .abstract_feeds_upload_service import AbstractFeedsUploadService
 
 import logging
@@ -13,21 +12,9 @@ import traceback
 
 class FeedsUploadService(AbstractFeedsUploadService):
 
-    def __init__(self):
+    def __init__(self, ws_service: AbstractWSPubService):
         super().__init__()
-        self.redis_client = None
-        try:
-            self.redis_client = redis.StrictRedis(
-                config("REDIS_PUB.HOST"),
-                config("REDIS_PUB.PORT"),
-                password=config("REDIS_PUB.PASSWORD", None),
-                charset="utf-8",
-                decode_responses=True,
-                db=config("REDIS_PUB.DB")
-            )
-        except:
-            self.redis_client = None
-            logging.getLogger('api').warning(traceback.format_exc())
+        self.ws_service = ws_service
 
     def upload(self, summit_id: int):
         try:
@@ -55,14 +42,15 @@ class FeedsUploadService(AbstractFeedsUploadService):
                         Bucket=f'{config("STORAGE.BUCKET_NAME")}',
                         Key=f'{summit_id}/{path}',
                         Body=file_contents,
+                        ACL='public-read'
                     )
                     logging.getLogger('api').info(f'FeedsUploadService uploading {summit_id}/{path}')
 
-            # publish to redis
+                # publish to WS
 
-            if self.redis_client:
-                self.redis_client.publish(config('REDIS_PUB.CHANNEL'), json.dumps(responses))
+                self.ws_service.pub(summit_id, 0, 'Schedule', 'UPDATE')
 
-        except Exception:
+        except Exception as e:
+            logging.getLogger('api').error(e)
             logging.getLogger('api').error(traceback.format_exc())
             raise Exception('FeedsUploadService::upload error')
