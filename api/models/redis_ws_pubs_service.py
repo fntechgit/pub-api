@@ -4,7 +4,8 @@ from ..utils import config
 import traceback
 import redis
 import json
-
+from datetime import datetime
+import pytz
 
 class RedisWSPubService(AbstractWSPubService):
 
@@ -31,11 +32,13 @@ class RedisWSPubService(AbstractWSPubService):
     def pub(self, summit_id: int, entity_id: int, entity_type: str, op: str):
         try:
             if self.redis_client:
+                now = datetime.utcnow().replace(tzinfo=pytz.UTC)
                 res = {
                     'summit_id': summit_id,
                     'entity_type': entity_type,
                     'entity_id': entity_id,
-                    'entity_operator': op
+                    'entity_operator': op,
+                    'created_at': int(now.timestamp()),
                 }
                 self.redis_client.publish(config('REDIS_PUB.CHANNEL'), json.dumps(res))
         except:
