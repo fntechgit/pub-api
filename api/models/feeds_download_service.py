@@ -172,7 +172,7 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
     def download(self, summit_id: int):
         try:
             access_token = self.access_token_service.get_access_token()
-            loop = asyncio.get_event_loop()
+            loop = asyncio.new_event_loop()
             loop.run_until_complete(self.__dump_all_for_summit(summit_id, access_token))
             loop.close()
             logging.getLogger('api').info(f'FeedsDownloadService download finished for summit_id {summit_id}')
