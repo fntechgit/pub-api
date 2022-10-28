@@ -9,11 +9,6 @@ import logging
 from ..utils import config
 import traceback
 
-SCHEDULE_ENTITY_TYPE = 'Schedule'
-SCHEDULE_ENTITY_OP = 'UPDATE'
-SCHEDULE_ENTITY_ID = 0
-S3_ACL = 'public-read'
-
 
 class FeedsUploadService(AbstractFeedsUploadService):
 
@@ -48,14 +43,14 @@ class FeedsUploadService(AbstractFeedsUploadService):
                         Bucket=f'{config("STORAGE.BUCKET_NAME")}',
                         Key=f'{summit_id}/{path}',
                         Body=file_contents,
-                        ACL=S3_ACL
+                        ACL='public-read'
                     )
                     logging.getLogger('api').info(f'FeedsUploadService uploading {summit_id}/{path}')
 
                 # publish to WS
 
-                self.pub_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP)
-                self.ws_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP)
+                self.pub_service.pub(summit_id, 0, 'Schedule', 'UPDATE')
+                self.ws_service.pub(summit_id, 0, 'Schedule', 'UPDATE')
 
         except Exception as e:
             logging.getLogger('api').error(e)
