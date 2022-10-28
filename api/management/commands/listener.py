@@ -12,6 +12,9 @@ from api.utils import config
 
 from phpserialize import unserialize
 from phpserialize import phpobject
+from django_injector import inject
+from api.models.abstract_pub_service import AbstractPubService
+from api.models.abstract_ws_pub_service import AbstractWSPubService
 
 QUEUE_EVENT_NAME = 'App\\Jobs\\PublishScheduleEntityLifeCycleEvent'
 
@@ -19,8 +22,11 @@ QUEUE_EVENT_NAME = 'App\\Jobs\\PublishScheduleEntityLifeCycleEvent'
 class Command(BaseCommand):
     help = 'Runs Queue listener (RabbitMQ)'
 
-    def __init__(self):
-        super().__init__()
+    @inject
+    def __init__(self, service: AbstractPubService, ws_service: AbstractWSPubService, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.service = service
+        self.ws_service = ws_service
 
     @staticmethod
     def php_serialized_to_dict(serialized):
@@ -36,8 +42,7 @@ class Command(BaseCommand):
 
         return output
 
-    @staticmethod
-    def callback(channel, method, header, body):
+    def callback(self, channel, method, header, body):
         try:
             logging.getLogger('listener').info('receiving data {data}'.format(data=body))
             data = json.loads(body)
@@ -64,6 +69,12 @@ class Command(BaseCommand):
                 # trigger celery job to rebuild CDN json files
                 if entity_type == 'Summit':
                     summit_id = entity_id
+
+                self.service.pub(summit_id, entity_id, entity_type, entity_op)
+
+                # publish to WS
+
+                self.ws_service.pub(summit_id, entity_id, entity_type, entity_op)
 
                 create_model_snapshot.delay(summit_id)
         except:

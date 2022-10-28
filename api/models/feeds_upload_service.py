@@ -2,19 +2,25 @@ import os
 
 import boto3
 
-from . import AbstractWSPubService
+from . import AbstractWSPubService, AbstractPubService
 from .abstract_feeds_upload_service import AbstractFeedsUploadService
 
 import logging
 from ..utils import config
 import traceback
 
+SCHEDULE_ENTITY_TYPE = 'Schedule'
+SCHEDULE_ENTITY_OP = 'UPDATE'
+SCHEDULE_ENTITY_ID = 0
+S3_ACL = 'public-read'
+
 
 class FeedsUploadService(AbstractFeedsUploadService):
 
-    def __init__(self, ws_service: AbstractWSPubService):
+    def __init__(self, pub_service: AbstractPubService, ws_service: AbstractWSPubService):
         super().__init__()
         self.ws_service = ws_service
+        self.pub_service = pub_service
 
     def upload(self, summit_id: int):
         try:
@@ -42,13 +48,14 @@ class FeedsUploadService(AbstractFeedsUploadService):
                         Bucket=f'{config("STORAGE.BUCKET_NAME")}',
                         Key=f'{summit_id}/{path}',
                         Body=file_contents,
-                        ACL='public-read'
+                        ACL=S3_ACL
                     )
                     logging.getLogger('api').info(f'FeedsUploadService uploading {summit_id}/{path}')
 
                 # publish to WS
 
-                self.ws_service.pub(summit_id, 0, 'Schedule', 'UPDATE')
+                self.pub_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP)
+                self.ws_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP)
 
         except Exception as e:
             logging.getLogger('api').error(e)
