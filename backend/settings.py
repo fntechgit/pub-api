@@ -362,8 +362,8 @@ RABBIT = {
 
 
 # Celery config
-CELERY_BROKER_URL = f"redis://:{os.getenv('REDIS_PUB_PASSWORD')}@{os.getenv('REDIS_PUB_HOST')}:{os.getenv('REDIS_PUB_PORT')}/{os.getenv('REDIS_PUB_DB', 0)}"
-CELERY_RESULT_BACKEND = f"redis://:{os.getenv('REDIS_PUB_PASSWORD')}@{os.getenv('REDIS_PUB_HOST')}:{os.getenv('REDIS_PUB_PORT')}/{os.getenv('REDIS_PUB_DB', 0)}"
+CELERY_BROKER_URL = f"redis://:{os.getenv('REDIS_LOCAL_PASSWORD')}@{os.getenv('REDIS_LOCAL_HOST','127.0.0.1')}:{os.getenv('REDIS_LOCAL_PORT', 6379)}/{os.getenv('REDIS_LOCAL_DB', 0)}"
+CELERY_RESULT_BACKEND = f"redis://:{os.getenv('REDIS_LOCAL_PASSWORD')}@{os.getenv('REDIS_LOCAL_HOST','127.0.0.1')}:{os.getenv('REDIS_LOCAL_PORT', 6379)}/{os.getenv('REDIS_LOCAL_DB', 0)}"
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER = 'json'
