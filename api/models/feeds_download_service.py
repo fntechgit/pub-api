@@ -22,16 +22,18 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
         self.access_token_service = access_token_service
 
     async def __get_page(self, endpoint: str, params: any, page: int):
+        params['page'] = page
         response = requests.get(endpoint, params=params)
         return {'page_number': page, 'page_data': response.json()}
 
-    async def __get_remaining_pages(self, endpoint: str, params: any, last_page: int):
+    async def __get_remaining_items(self, endpoint: str, params: any, last_page: int):
         result = await asyncio.gather(*[self.__get_page(endpoint, params, page) for page in range(2, last_page + 1)])
         ordered_result = sorted(result, key=lambda d: d['page_number'])
-        pages = []
+        items = []
         for r in ordered_result:
-            pages.append(r['page_data'])
-        return pages
+            items += r['page_data']['data']
+
+        return items
 
     async def __download_events(self, summit_id: int, access_token: str):
         try:
@@ -48,7 +50,7 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                return data + await self.__get_remaining_pages(endpoint, params, resp['last_page'])
+                return data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
 
             return data
         except Exception as ex:
@@ -67,7 +69,7 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                return data + await self.__get_remaining_pages(endpoint, params, resp['last_page'])
+                return data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
 
             return data
         except Exception as ex:
@@ -106,7 +108,7 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                return data + await self.__get_remaining_pages(endpoint, params, resp['last_page'])
+                return data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
 
             return data
         except Exception as ex:
@@ -129,7 +131,7 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                return data + await self.__get_remaining_pages(endpoint, params, resp['last_page'])
+                return data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
 
             return data
         except Exception as ex:

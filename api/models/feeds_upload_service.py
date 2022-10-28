@@ -1,13 +1,13 @@
+import gzip
+import logging
 import os
+import traceback
 
 import boto3
 
 from . import AbstractWSPubService, AbstractPubService
 from .abstract_feeds_upload_service import AbstractFeedsUploadService
-
-import logging
 from ..utils import config
-import traceback
 
 SCHEDULE_ENTITY_TYPE='Schedule'
 SCHEDULE_ENTITY_OP='UPDATE'
@@ -47,8 +47,9 @@ class FeedsUploadService(AbstractFeedsUploadService):
                     responses += client.put_object(
                         Bucket=f'{config("STORAGE.BUCKET_NAME")}',
                         Key=f'{summit_id}/{path}',
-                        Body=file_contents,
-                        ACL=S3_ACL
+                        Body=gzip.compress(file_contents.read()),
+                        ACL=S3_ACL,
+                        ContentEncoding='gzip'
                     )
                     logging.getLogger('api').info(f'FeedsUploadService uploading {summit_id}/{path}')
 
