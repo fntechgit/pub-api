@@ -14,7 +14,7 @@ def create_model_snapshot(summit_id: int):
     logging.getLogger('api').debug(f'calling create_model_snapshot task for summit {summit_id}...')
 
     feeds_download_service = FeedsDownloadService(AccessTokenService())
-    feeds_upload_service = FeedsUploadService(SupaBasePubService, RedisWSPubService())
+    feeds_upload_service = FeedsUploadService(SupaBasePubService(), RedisWSPubService())
 
     feeds_download_service.download(summit_id)
     feeds_upload_service.upload(summit_id)
