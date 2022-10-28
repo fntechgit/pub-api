@@ -28,6 +28,6 @@ class ApiAppModule(Module):
         feeds_download_service = FeedsDownloadService(access_token_service)
         binder.bind(AbstractFeedsDownloadService, to=feeds_download_service, scope=singleton)
 
-        feeds_upload_service = FeedsUploadService(redis_pub_service)
+        feeds_upload_service = FeedsUploadService(supabase_pub_service, redis_pub_service)
         binder.bind(AbstractFeedsUploadService, to=feeds_upload_service, scope=singleton)
         
