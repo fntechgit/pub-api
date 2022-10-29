@@ -24,18 +24,20 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
     async def __get_page(self, endpoint: str, params: any, page: int):
         params['page'] = page
         response = requests.get(endpoint, params=params)
-        return {'page_number': page, 'page_data': response.json()}
+        return response.json()
 
     async def __get_remaining_items(self, endpoint: str, params: any, last_page: int):
         result = await asyncio.gather(*[self.__get_page(endpoint, params, page) for page in range(2, last_page + 1)])
-        ordered_result = sorted(result, key=lambda d: d['page_number'])
+        ordered_result = sorted(result, key=lambda d: d['current_page'])
         items = []
         for r in ordered_result:
-            items += r['page_data']['data']
+            items += r['data']
 
         return items
 
     async def __download_events(self, summit_id: int, access_token: str):
+        logging.getLogger('api') \
+            .info(f'FeedsDownloadService __download_events: summit_id {summit_id}')
         try:
             endpoint = f"{config('SUMMIT_API_BASE_URL', None)}/api/v1/summits/{summit_id}/events/published"
             params = {
@@ -58,6 +60,8 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             raise Exception('__download_events error')
 
     async def __download_speakers(self, summit_id: int, access_token: str):
+        logging.getLogger('api') \
+            .info(f'FeedsDownloadService __download_speakers: summit_id {summit_id}')
         try:
             endpoint = f"{config('SUMMIT_API_BASE_URL', None)}/api/v1/summits/{summit_id}/speakers/on-schedule"
             params = {
@@ -77,6 +81,8 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             raise Exception('__download_speakers error')
 
     async def __download_summit(self, summit_id: int, access_token: str):
+        logging.getLogger('api') \
+            .info(f'FeedsDownloadService __download_summit: summit_id {summit_id}')
         try:
             response = requests.get(
                 f"{config('SUMMIT_API_BASE_URL', None)}/api/v1/summits/{summit_id}",
@@ -94,6 +100,8 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             raise Exception('__download_summit error')
 
     async def __download_summit_extra_questions(self, summit_id: int, access_token: str):
+        logging.getLogger('api') \
+            .info(f'FeedsDownloadService __download_summit_extra_questions: summit_id {summit_id}')
         try:
             endpoint = f"{config('SUMMIT_API_BASE_URL', None)}/api/v1/summits/{summit_id}/order-extra-questions"
             params = {
@@ -116,6 +124,8 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             raise Exception('__download_summit_extra_questions error')
 
     async def __download_voteable_presentations(self, summit_id: int, access_token: str):
+        logging.getLogger('api') \
+            .info(f'FeedsDownloadService __download_voteable_presentations: summit_id {summit_id}')
         try:
             endpoint = f"{config('SUMMIT_API_BASE_URL', None)}/api/v1/summits/{summit_id}/presentations/voteable"
             params = {
@@ -153,23 +163,26 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
 
         show_feeds_dir_path = os.path.join(config('LOCAL_SHOW_FEEDS_DIR_PATH'), summit_id.__str__())
 
+        logging.getLogger('api') \
+            .info(f'FeedsDownloadService __dump_all_for_summit: summit_id {summit_id} saving files to {show_feeds_dir_path}')
+
         if not os.path.exists(show_feeds_dir_path):
             os.makedirs(show_feeds_dir_path)
 
         with open(f'{show_feeds_dir_path}/events.json', 'w') as outfile:
-            json.dump(events, outfile)
+            json.dump(events, outfile, separators=(',', ':'))
 
         with open(f'{show_feeds_dir_path}/speakers.json', 'w') as outfile:
-            json.dump(speakers, outfile)
+            json.dump(speakers, outfile, separators=(',', ':'))
 
         with open(f'{show_feeds_dir_path}/summit.json', 'w') as outfile:
-            json.dump(summit, outfile)
+            json.dump(summit, outfile, separators=(',', ':'))
 
         with open(f'{show_feeds_dir_path}/extra_questions.json', 'w') as outfile:
-            json.dump(extra_questions, outfile)
+            json.dump(extra_questions, outfile, separators=(',', ':'))
 
         with open(f'{show_feeds_dir_path}/presentations.json', 'w') as outfile:
-            json.dump(presentations, outfile)
+            json.dump(presentations, outfile, separators=(',', ':'))
 
     def download(self, summit_id: int):
         try:
