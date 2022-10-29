@@ -49,7 +49,8 @@ class FeedsUploadService(AbstractFeedsUploadService):
                         Key=f'{summit_id}/{path}',
                         Body=gzip.compress(file_contents.read()),
                         ACL=S3_ACL,
-                        ContentEncoding='gzip'
+                        ContentEncoding='gzip',
+                        ContentType='application/json; charset=utf-8',
                     )
                     logging.getLogger('api').info(f'FeedsUploadService uploading {summit_id}/{path}')
 
