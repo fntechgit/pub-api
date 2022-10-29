@@ -169,20 +169,20 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
         if not os.path.exists(show_feeds_dir_path):
             os.makedirs(show_feeds_dir_path)
 
-        with open(f'{show_feeds_dir_path}/events.json', 'w') as outfile:
-            json.dump(events, outfile, separators=(',', ':'))
+        with open(f'{show_feeds_dir_path}/events.json', 'w', encoding='utf8') as outfile:
+            json.dump(events, outfile, separators=(',', ':'), ensure_ascii=False)
 
-        with open(f'{show_feeds_dir_path}/speakers.json', 'w') as outfile:
-            json.dump(speakers, outfile, separators=(',', ':'))
+        with open(f'{show_feeds_dir_path}/speakers.json', 'w', encoding='utf8') as outfile:
+            json.dump(speakers, outfile, separators=(',', ':'), ensure_ascii=False)
 
-        with open(f'{show_feeds_dir_path}/summit.json', 'w') as outfile:
-            json.dump(summit, outfile, separators=(',', ':'))
+        with open(f'{show_feeds_dir_path}/summit.json', 'w', encoding='utf8') as outfile:
+            json.dump(summit, outfile, separators=(',', ':'), ensure_ascii=False)
 
-        with open(f'{show_feeds_dir_path}/extra_questions.json', 'w') as outfile:
-            json.dump(extra_questions, outfile, separators=(',', ':'))
+        with open(f'{show_feeds_dir_path}/extra_questions.json', 'w', encoding='utf8') as outfile:
+            json.dump(extra_questions, outfile, separators=(',', ':'), ensure_ascii=False)
 
-        with open(f'{show_feeds_dir_path}/presentations.json', 'w') as outfile:
-            json.dump(presentations, outfile, separators=(',', ':'))
+        with open(f'{show_feeds_dir_path}/presentations.json', 'w', encoding='utf8') as outfile:
+            json.dump(presentations, outfile, separators=(',', ':'), ensure_ascii=False)
 
     def download(self, summit_id: int):
         try:
