@@ -99,12 +99,13 @@ class Command(BaseCommand):
 
                 channel.exchange_declare(exchange=config("RABBIT.EXCHANGE"), exchange_type='fanout', durable=True,
                                          auto_delete=False)
+
                 result = channel.queue_declare(queue=config("RABBIT.QUEUE"), exclusive=False, auto_delete=False,
                                                durable=True)
 
                 queue_name = result.method.queue
 
-                channel.queue_bind(exchange=config("RABBIT.EXCHANGE"), queue=queue_name)
+                channel.queue_bind(exchange=config("RABBIT.EXCHANGE"), queue=queue_name, routing_key='')
 
                 channel.basic_consume(queue_name, on_message_callback=self.callback, auto_ack=True)
 
