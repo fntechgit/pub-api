@@ -43,7 +43,7 @@ class FeedsUploadService(AbstractFeedsUploadService):
                 if not os.path.isfile(os.path.join(show_feeds_dir_path, path)):
                     continue
 
-                with open(os.path.join(show_feeds_dir_path, path), 'rb', encoding='utf8') as file_contents:
+                with open(os.path.join(show_feeds_dir_path, path), 'rb') as file_contents:
                     responses += client.put_object(
                         Bucket=f'{config("STORAGE.BUCKET_NAME")}',
                         Key=f'{summit_id}/{path}',
