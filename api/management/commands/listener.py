@@ -9,9 +9,6 @@ from pika.exceptions import ConnectionClosedByBroker, AMQPChannelError, AMQPConn
 
 from api.tasks import create_model_snapshot
 from api.utils import config
-
-from phpserialize import unserialize
-from phpserialize import phpobject
 from django_injector import inject
 from api.models.abstract_pub_service import AbstractPubService
 from api.models.abstract_ws_pub_service import AbstractWSPubService
@@ -28,55 +25,32 @@ class Command(BaseCommand):
         self.service = service
         self.ws_service = ws_service
 
-    @staticmethod
-    def php_serialized_to_dict(serialized):
-
-        output = unserialize(bytes(serialized, 'utf-8'), object_hook=phpobject)
-
-        output = output._asdict()
-
-        output = {
-            key.decode(): val.decode() if isinstance(val, bytes) else val
-            for key, val in output.items()
-        }
-
-        return output
-
     def callback(self, channel, method, header, body):
         try:
             logging.getLogger('listener').info('receiving data {data}'.format(data=body))
             data = json.loads(body)
-            command = data['data']['command']
-            command_name = data['data']['commandName']
-            logging.getLogger('listener').info('command {command_name}'.format(command_name=command_name))
-            if command_name == QUEUE_EVENT_NAME:
-                dict = Command.php_serialized_to_dict(command)
-                # received a novelty
-                # summit_id
-                # entity_id
-                # entity_type
-                # entity_operator (INSERT, UPDATE, DELETE)
+            # received a novelty
+            # summit_id
+            # entity_id
+            # entity_type
+            # entity_operator (INSERT, UPDATE, DELETE)
+            entity_op = data['entity_operator']
+            summit_id = data['summit_id']
+            entity_id = data['entity_id']
+            entity_type = data['entity_type']
 
-                entity_op = dict['entity_operator']
-                summit_id = dict['summit_id']
-                entity_id = dict['entity_id']
-                entity_type = dict['entity_type']
+            # trigger celery job to rebuild CDN json files
+            if entity_type == 'Summit':
+                summit_id = entity_id
 
-                logging.getLogger('listener')\
-                    .info(f'command {command_name} entity_op {entity_op} summit_id {summit_id} '
-                          f'entity_id {entity_id} entity_type {entity_type}')
+            self.service.pub(summit_id, entity_id, entity_type, entity_op)
 
-                # trigger celery job to rebuild CDN json files
-                if entity_type == 'Summit':
-                    summit_id = entity_id
+            # publish to WS
 
-                self.service.pub(summit_id, entity_id, entity_type, entity_op)
+            self.ws_service.pub(summit_id, entity_id, entity_type, entity_op)
 
-                # publish to WS
+            create_model_snapshot.delay(summit_id)
 
-                self.ws_service.pub(summit_id, entity_id, entity_type, entity_op)
-
-                create_model_snapshot.delay(summit_id)
         except:
             logging.getLogger('listener').error(traceback.format_exc())
 
