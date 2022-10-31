@@ -9,10 +9,10 @@ from . import AbstractWSPubService, AbstractPubService
 from .abstract_feeds_upload_service import AbstractFeedsUploadService
 from ..utils import config
 
-SCHEDULE_ENTITY_TYPE='Schedule'
-SCHEDULE_ENTITY_OP='UPDATE'
-SCHEDULE_ENTITY_ID=0
-S3_ACL='public-read'
+SCHEDULE_ENTITY_TYPE = 'Schedule'
+SCHEDULE_ENTITY_OP = 'UPDATE'
+SCHEDULE_ENTITY_ID = 0
+S3_ACL = 'public-read'
 
 
 class FeedsUploadService(AbstractFeedsUploadService):

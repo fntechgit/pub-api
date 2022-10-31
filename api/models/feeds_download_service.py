@@ -148,10 +148,10 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             logging.getLogger('api').error(ex)
             raise Exception('__download_voteable_presentations error')
 
-    async def __dump_all_for_summit(self, summit_id: int, access_token: str):
+    async def __dump_all_for_summit(self, summit_id: int, access_token: str, target_dir: str):
 
         logging.getLogger('api') \
-            .info(f'FeedsDownloadService __dump_all_for_summit: summit_id {summit_id}')
+            .info(f'FeedsDownloadService __dump_all_for_summit: summit_id {summit_id} saving files to {target_dir}')
 
         events, speakers, summit, extra_questions, presentations = await asyncio.gather(
             self.__download_events(summit_id, access_token),
@@ -161,34 +161,29 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             self.__download_voteable_presentations(summit_id, access_token)
         )
 
-        show_feeds_dir_path = os.path.join(config('LOCAL_SHOW_FEEDS_DIR_PATH'), summit_id.__str__())
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
 
-        logging.getLogger('api') \
-            .info(f'FeedsDownloadService __dump_all_for_summit: summit_id {summit_id} saving files to {show_feeds_dir_path}')
-
-        if not os.path.exists(show_feeds_dir_path):
-            os.makedirs(show_feeds_dir_path)
-
-        with open(f'{show_feeds_dir_path}/events.json', 'w', encoding='utf8') as outfile:
+        with open(f'{target_dir}/events.json', 'w', encoding='utf8') as outfile:
             json.dump(events, outfile, separators=(',', ':'), ensure_ascii=False)
 
-        with open(f'{show_feeds_dir_path}/speakers.json', 'w', encoding='utf8') as outfile:
+        with open(f'{target_dir}/speakers.json', 'w', encoding='utf8') as outfile:
             json.dump(speakers, outfile, separators=(',', ':'), ensure_ascii=False)
 
-        with open(f'{show_feeds_dir_path}/summit.json', 'w', encoding='utf8') as outfile:
+        with open(f'{target_dir}/summit.json', 'w', encoding='utf8') as outfile:
             json.dump(summit, outfile, separators=(',', ':'), ensure_ascii=False)
 
-        with open(f'{show_feeds_dir_path}/extra_questions.json', 'w', encoding='utf8') as outfile:
-            json.dump(extra_questions, outfile, separators=(',', ':'), ensure_ascii=False)
+        with open(f'{target_dir}/extra_questions.json', 'w', encoding='utf8') as outfile:
+            json.dump(target_dir, outfile, separators=(',', ':'), ensure_ascii=False)
 
-        with open(f'{show_feeds_dir_path}/presentations.json', 'w', encoding='utf8') as outfile:
+        with open(f'{target_dir}/presentations.json', 'w', encoding='utf8') as outfile:
             json.dump(presentations, outfile, separators=(',', ':'), ensure_ascii=False)
 
-    def download(self, summit_id: int):
+    def download(self, summit_id: int, target_dir: str):
         try:
             access_token = self.access_token_service.get_access_token()
             loop = asyncio.new_event_loop()
-            loop.run_until_complete(self.__dump_all_for_summit(summit_id, access_token))
+            loop.run_until_complete(self.__dump_all_for_summit(summit_id, access_token, target_dir))
             loop.close()
             logging.getLogger('api').info(f'FeedsDownloadService download finished for summit_id {summit_id}')
         except Exception:
