@@ -9,7 +9,7 @@ from rest_framework.viewsets import ViewSet
 from ..models.abstract_feeds_download_service import AbstractFeedsDownloadService
 from ..models.abstract_feeds_upload_service import AbstractFeedsUploadService
 from ..security import OAuth2Authentication, oauth2_scope_required
-from api.tasks import create_model_snapshot
+from api.tasks import create_snapshot_cancellable
 import os
 
 
@@ -28,7 +28,7 @@ class EntityFeedAPIView(ViewSet):
     def feed(self, request, summit_id, *args, **kwargs):
         try:
             logging.getLogger('api').debug(f'calling EntityFeedAPIView::feed for summit_id {summit_id}')
-            create_model_snapshot.delay(summit_id)
+            create_snapshot_cancellable(summit_id)
             return Response(status=status.HTTP_201_CREATED)
         except Exception as e:
             logging.getLogger('api').error(e)

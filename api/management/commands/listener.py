@@ -7,7 +7,7 @@ import traceback
 
 from pika.exceptions import ConnectionClosedByBroker, AMQPChannelError, AMQPConnectionError
 
-from api.tasks import create_model_snapshot
+from api.tasks import create_snapshot_cancellable
 from api.utils import config
 from django_injector import inject
 from api.models.abstract_pub_service import AbstractPubService
@@ -49,7 +49,7 @@ class Command(BaseCommand):
 
             self.ws_service.pub(summit_id, entity_id, entity_type, entity_op)
 
-            create_model_snapshot.delay(summit_id)
+            create_snapshot_cancellable(summit_id)
 
         except:
             logging.getLogger('listener').error(traceback.format_exc())

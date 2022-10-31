@@ -22,7 +22,7 @@ class FeedsUploadService(AbstractFeedsUploadService):
         self.ws_service = ws_service
         self.pub_service = pub_service
 
-    def upload(self, summit_id: int):
+    def upload(self, summit_id: int, source_dir_path: str):
         try:
             session = boto3.session.Session()
 
@@ -34,16 +34,14 @@ class FeedsUploadService(AbstractFeedsUploadService):
                 aws_secret_access_key=config("STORAGE.SECRET_ACCESS_KEY"),
             )
 
-            show_feeds_dir_path = os.path.join(config('LOCAL_SHOW_FEEDS_DIR_PATH'), summit_id.__str__())
-
             responses = []
 
-            for path in os.listdir(show_feeds_dir_path):
+            for path in os.listdir(source_dir_path):
                 # check if current path is a file
-                if not os.path.isfile(os.path.join(show_feeds_dir_path, path)):
+                if not os.path.isfile(os.path.join(source_dir_path, path)):
                     continue
 
-                with open(os.path.join(show_feeds_dir_path, path), 'rb') as file_contents:
+                with open(os.path.join(source_dir_path, path), 'rb') as file_contents:
                     responses += client.put_object(
                         Bucket=f'{config("STORAGE.BUCKET_NAME")}',
                         Key=f'{summit_id}/{path}',
@@ -52,7 +50,7 @@ class FeedsUploadService(AbstractFeedsUploadService):
                         ContentEncoding='gzip',
                         ContentType='application/json; charset=utf-8',
                     )
-                    logging.getLogger('api').info(f'FeedsUploadService uploading {summit_id}/{path}')
+                    logging.getLogger('api').info(f'FeedsUploadService uploading {source_dir_path}/{path}')
 
                 # publish to WS
 
