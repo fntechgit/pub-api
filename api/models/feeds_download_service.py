@@ -173,8 +173,8 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
         with open(f'{target_dir}/summit.json', 'w', encoding='utf8') as outfile:
             json.dump(summit, outfile, separators=(',', ':'), ensure_ascii=False)
 
-        with open(f'{target_dir}/extra_questions.json', 'w', encoding='utf8') as outfile:
-            json.dump(target_dir, outfile, separators=(',', ':'), ensure_ascii=False)
+        with open(f'{target_dir}/extra-questions.json', 'w', encoding='utf8') as outfile:
+            json.dump(extra_questions, outfile, separators=(',', ':'), ensure_ascii=False)
 
         with open(f'{target_dir}/presentations.json', 'w', encoding='utf8') as outfile:
             json.dump(presentations, outfile, separators=(',', ':'), ensure_ascii=False)
