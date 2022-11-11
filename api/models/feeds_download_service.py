@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 import traceback
 from datetime import datetime
 
@@ -42,17 +43,24 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             endpoint = f"{config('SUMMIT_API_BASE_URL', None)}/api/v1/summits/{summit_id}/events/published"
             params = {
                 "access_token": access_token,
-                "per_page": 50,
+                "per_page": config('CONTENT_SNAPSHOT_DOWNLOAD_PAGE_SIZE', 50),
                 "page": 1,
                 "expand": 'slides, links, videos, media_uploads, type, track, track.allowed_access_levels, '
                           'location, location.venue, location.floor, speakers, moderator, sponsors, '
                           'current_attendance, groups, rsvp_template, tags',
             }
+            start = time.time()
+
             response = requests.get(endpoint, params=params)
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                return data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
+                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
+
+            end = time.time()
+
+            logging.getLogger('api') \
+                .info(f'FeedsDownloadService __download_events: execution time: {end - start} seconds')
 
             return data
         except Exception as ex:
@@ -67,13 +75,20 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             params = {
                 "access_token": access_token,
                 "page": 1,
-                "per_page": 30
+                "per_page": config('CONTENT_SNAPSHOT_DOWNLOAD_PAGE_SIZE', 50)
             }
+            start = time.time()
+
             response = requests.get(endpoint, params=params)
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                return data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
+                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
+
+            end = time.time()
+
+            logging.getLogger('api') \
+                .info(f'FeedsDownloadService __download_speakers: execution time: {end - start} seconds')
 
             return data
         except Exception as ex:
@@ -110,13 +125,13 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
                 'expand': '*sub_question_rules,*sub_question,*values',
                 'order': 'order',
                 'page': 1,
-                'per_page': 100,
+                'per_page': config('CONTENT_SNAPSHOT_DOWNLOAD_PAGE_SIZE', 50),
             }
             response = requests.get(endpoint, params=params)
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                return data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
+                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
 
             return data
         except Exception as ex:
@@ -132,16 +147,17 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
                 'access_token': access_token,
                 'filter': 'published==1',
                 'page': 1,
-                'per_page': 50,
+                'per_page': config('CONTENT_SNAPSHOT_DOWNLOAD_PAGE_SIZE', 50),
                 'expand': 'slides, links, videos, media_uploads, type, track, track.allowed_access_levels, '
                           'location, location.venue, location.floor, speakers, moderator, sponsors, '
                           'current_attendance, groups, rsvp_template, tags'
             }
+
             response = requests.get(endpoint, params=params)
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                return data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
+                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
 
             return data
         except Exception as ex:
@@ -153,6 +169,8 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
         logging.getLogger('api') \
             .info(f'FeedsDownloadService __dump_all_for_summit: summit_id {summit_id} saving files to {target_dir}')
 
+        start = time.time()
+
         events, speakers, summit, extra_questions, presentations = await asyncio.gather(
             self.__download_events(summit_id, access_token),
             self.__download_speakers(summit_id, access_token),
@@ -160,6 +178,11 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             self.__download_summit_extra_questions(summit_id, access_token),
             self.__download_voteable_presentations(summit_id, access_token)
         )
+
+        end = time.time()
+
+        logging.getLogger('api') \
+            .info(f'FeedsDownloadService __dump_all_for_summit: execution time: {end - start} seconds')
 
         if not os.path.exists(target_dir):
             os.makedirs(target_dir)

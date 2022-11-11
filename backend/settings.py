@@ -360,6 +360,7 @@ RABBIT = {
     'PASSWORD': os.getenv('RABBIT_PASSWORD'),
 }
 
+CONTENT_SNAPSHOT_DOWNLOAD_PAGE_SIZE = os.getenv('CONTENT_SNAPSHOT_DOWNLOAD_PAGE_SIZE', 50)
 
 # Celery config
 CELERY_BROKER_URL = f"redis://:{os.getenv('REDIS_LOCAL_PASSWORD')}@{os.getenv('REDIS_LOCAL_HOST','127.0.0.1')}:{os.getenv('REDIS_LOCAL_PORT', 6379)}/{os.getenv('REDIS_LOCAL_DB', 0)}"
