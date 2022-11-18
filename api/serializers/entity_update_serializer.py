@@ -5,6 +5,7 @@ import logging
 from ..utils.inject import inject
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.serializers import ValidationError
+from api.tasks import create_snapshot_cancellable
 
 
 # Serializer without model
@@ -71,13 +72,13 @@ class EntityUpdateWriteSerializer(serializers.Serializer):
             entity_id = validated_data['entity_id']
             entity_type = validated_data['entity_type']
             entity_operator = validated_data['entity_operator']
-            res = self.service.pub(summit_id, entity_id, entity_type, entity_operator)
-            if not res:
-                raise Exception("SUPABASE Exception")
 
-            # publish to WS
+            # publish
 
+            self.service.pub(summit_id, entity_id, entity_type, entity_operator)
             self.ws_service.pub(summit_id, entity_id, entity_type, entity_operator)
+
+            create_snapshot_cancellable(summit_id)
 
             return {"summit_id": summit_id,
                     "entity_id": entity_id,

@@ -16,6 +16,7 @@ SCHEDULE_ENTITY_ID = 0
 S3_ACL = 'public-read'
 S3_ContentType = 'application/json; charset=utf-8'
 S3_ContentEncoding = 'gzip'
+S3_CacheControl = 'no-cache, no-store'
 
 
 class FeedsUploadService(AbstractFeedsUploadService):
@@ -60,15 +61,17 @@ class FeedsUploadService(AbstractFeedsUploadService):
                         ContentEncoding=S3_ContentEncoding,
                         ContentType=S3_ContentType,
                         ContentMD5=content_md5_string,
+                        CacheControl=S3_CacheControl,
                     )
 
                     logging.getLogger('api').info(f'FeedsUploadService uploading {source_dir_path}/{path}')
 
-                # publish to WS
+                # publish
 
                 self.pub_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP)
                 self.ws_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP)
 
+            client.close()
         except Exception as e:
             logging.getLogger('api').error(e)
             logging.getLogger('api').error(traceback.format_exc())
