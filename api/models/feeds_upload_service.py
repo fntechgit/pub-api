@@ -66,10 +66,9 @@ class FeedsUploadService(AbstractFeedsUploadService):
 
                     logging.getLogger('api').info(f'FeedsUploadService uploading {source_dir_path}/{path}')
 
-                # publish
-
-                self.pub_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP)
-                self.ws_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP)
+            # publish
+            self.pub_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP)
+            self.ws_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP)
 
             client.close()
         except Exception as e:
