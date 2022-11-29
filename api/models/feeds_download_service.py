@@ -22,6 +22,15 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
         super().__init__()
         self.access_token_service = access_token_service
 
+    def __build_index(self, collection: any, path: str):
+        with open(path, 'w', encoding='utf8') as outfile:
+            collection_idx = {}
+            ix = 0
+            for item in collection:
+                collection_idx[item['id']] = ix
+                ix = ix + 1
+            json.dump(collection_idx, outfile, separators=(',', ':'), ensure_ascii=False)
+
     async def __get_page(self, endpoint: str, params: any, page: int):
         params['page'] = page
         response = requests.get(endpoint, params=params)
@@ -190,8 +199,12 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
         with open(f'{target_dir}/events.json', 'w', encoding='utf8') as outfile:
             json.dump(events, outfile, separators=(',', ':'), ensure_ascii=False)
 
+        self.__build_index(events, f'{target_dir}/events.idx.json')
+
         with open(f'{target_dir}/speakers.json', 'w', encoding='utf8') as outfile:
             json.dump(speakers, outfile, separators=(',', ':'), ensure_ascii=False)
+
+        self.__build_index(speakers, f'{target_dir}/speakers.idx.json')
 
         with open(f'{target_dir}/summit.json', 'w', encoding='utf8') as outfile:
             json.dump(summit, outfile, separators=(',', ':'), ensure_ascii=False)
@@ -199,8 +212,12 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
         with open(f'{target_dir}/extra-questions.json', 'w', encoding='utf8') as outfile:
             json.dump(extra_questions, outfile, separators=(',', ':'), ensure_ascii=False)
 
+        self.__build_index(extra_questions, f'{target_dir}/extra-questions.idx.json')
+
         with open(f'{target_dir}/presentations.json', 'w', encoding='utf8') as outfile:
             json.dump(presentations, outfile, separators=(',', ':'), ensure_ascii=False)
+
+        self.__build_index(presentations, f'{target_dir}/presentations.idx.json')
 
     def download(self, summit_id: int, target_dir: str):
         try:
