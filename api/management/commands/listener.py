@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 import json
 import pika
 import logging
-
+import time
 import traceback
 
 from pika.exceptions import ConnectionClosedByBroker, AMQPChannelError, AMQPConnectionError
@@ -38,16 +38,16 @@ class Command(BaseCommand):
             summit_id = data['summit_id']
             entity_id = data['entity_id']
             entity_type = data['entity_type']
-
+            created_at = round(time.time() * 1000)
             # trigger celery job to rebuild CDN json files
             if entity_type == 'Summit':
                 summit_id = entity_id
 
-            self.service.pub(summit_id, entity_id, entity_type, entity_op)
+            self.service.pub(summit_id, entity_id, entity_type, entity_op, created_at)
 
             # publish to WS
 
-            self.ws_service.pub(summit_id, entity_id, entity_type, entity_op)
+            self.ws_service.pub(summit_id, entity_id, entity_type, entity_op, created_at)
 
             create_snapshot_cancellable(summit_id)
 

@@ -31,7 +31,7 @@ class RedisWSPubService(AbstractWSPubService):
         if self.redis_client is not None:
             self.redis_client = None
 
-    def pub(self, summit_id: int, entity_id: int, entity_type: str, op: str):
+    def pub(self, summit_id: int, entity_id: int, entity_type: str, op: str, created_at:int):
         try:
             if self.redis_client:
                 now = datetime.utcnow().replace(tzinfo=pytz.UTC)

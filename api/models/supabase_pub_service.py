@@ -22,11 +22,11 @@ class SupaBasePubService(AbstractPubService):
         if self.supabase is not None:
             self.supabase = None
 
-    def pub(self, summit_id: int, entity_id: int, entity_type: str, op: str):
+    def pub(self, summit_id: int, entity_id: int, entity_type: str, op: str, created_at:int):
         try:
             result = self.supabase \
                 .table("summit_entity_updates").insert(
-                {"summit_id": summit_id, "entity_id": entity_id, "entity_type": entity_type, "entity_op": op}).execute()
+                {"summit_id": summit_id, "entity_id": entity_id, "entity_type": entity_type, "entity_op": op, "created_at_epoch": created_at}).execute()
             if len(result.data) > 0:
                 return result.data[0]
             return None

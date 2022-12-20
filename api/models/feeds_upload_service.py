@@ -5,6 +5,7 @@ import traceback
 import hashlib
 import boto3
 import base64
+import time
 
 from . import AbstractWSPubService, AbstractPubService
 from .abstract_feeds_upload_service import AbstractFeedsUploadService
@@ -67,8 +68,9 @@ class FeedsUploadService(AbstractFeedsUploadService):
                     logging.getLogger('api').info(f'FeedsUploadService uploading {source_dir_path}/{path}')
 
             # publish
-            self.pub_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP)
-            self.ws_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP)
+            created_at = round(time.time() * 1000)
+            self.pub_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP, created_at)
+            self.ws_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP, created_at)
 
             client.close()
         except Exception as e:

@@ -2,6 +2,8 @@ from rest_framework import serializers
 from ..models import AbstractPubService
 from ..models import AbstractWSPubService
 import logging
+import time
+
 from ..utils.inject import inject
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.serializers import ValidationError
@@ -74,9 +76,9 @@ class EntityUpdateWriteSerializer(serializers.Serializer):
             entity_operator = validated_data['entity_operator']
 
             # publish
-
-            self.service.pub(summit_id, entity_id, entity_type, entity_operator)
-            self.ws_service.pub(summit_id, entity_id, entity_type, entity_operator)
+            created_at = round(time.time() * 1000)
+            self.service.pub(summit_id, entity_id, entity_type, entity_operator, created_at)
+            self.ws_service.pub(summit_id, entity_id, entity_type, entity_operator, created_at)
 
             create_snapshot_cancellable(summit_id)
 
