@@ -6,6 +6,8 @@ import redis
 import json
 from datetime import datetime
 import pytz
+import time
+
 
 class RedisWSPubService(AbstractWSPubService):
 
@@ -38,7 +40,7 @@ class RedisWSPubService(AbstractWSPubService):
                     'entity_type': entity_type,
                     'entity_id': entity_id,
                     'entity_operator': op,
-                    'created_at': int(now.timestamp()),
+                    'created_at': round(time.time() * 1000),
                 }
                 self.redis_client.publish(config('REDIS_PUB.CHANNEL'), json.dumps(res))
         except:
