@@ -26,7 +26,7 @@ class SupaBasePubService(AbstractPubService):
         try:
             result = self.supabase \
                 .table("summit_entity_updates").insert(
-                {"summit_id": summit_id, "entity_id": entity_id, "entity_type": entity_type, "entity_op": op, "created_at_epoch": created_at}).execute()
+                {"summit_id": summit_id, "entity_id": entity_id, "entity_type": entity_type, "entity_operator": op, "created_at": created_at}).execute()
             if len(result.data) > 0:
                 return result.data[0]
             return None
