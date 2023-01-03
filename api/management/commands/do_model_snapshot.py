@@ -1,12 +1,11 @@
 import shutil
-import time
 
 from django.core.management.base import BaseCommand
 from django_injector import inject
 
 from api.models.abstract_feeds_download_service import AbstractFeedsDownloadService
 from api.models.abstract_feeds_upload_service import AbstractFeedsUploadService
-from api.tasks import get_local_pivot_dir_path, create_snapshot_cancellable
+from api.tasks import get_local_pivot_dir_path
 
 DOWNLOAD = 'download'
 UPLOAD = 'upload'

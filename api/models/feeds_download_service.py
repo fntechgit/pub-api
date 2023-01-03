@@ -180,6 +180,9 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
 
         start = time.time()
 
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
+
         events, speakers, summit, extra_questions, presentations = await asyncio.gather(
             self.__download_events(summit_id, access_token),
             self.__download_speakers(summit_id, access_token),
@@ -192,9 +195,6 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
 
         logging.getLogger('api') \
             .info(f'FeedsDownloadService __dump_all_for_summit: execution time: {end - start} seconds')
-
-        if not os.path.exists(target_dir):
-            os.makedirs(target_dir)
 
         with open(f'{target_dir}/events.json', 'w', encoding='utf8') as outfile:
             json.dump(events, outfile, separators=(',', ':'), ensure_ascii=False)
