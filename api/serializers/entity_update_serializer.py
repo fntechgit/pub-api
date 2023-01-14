@@ -1,6 +1,5 @@
 from rest_framework import serializers
-from ..models import AbstractPubService
-from ..models import AbstractWSPubService
+from ..models import AbstractPubManager
 import logging
 import time
 
@@ -14,10 +13,9 @@ from api.tasks import create_snapshot_cancellable
 class EntityUpdateWriteSerializer(serializers.Serializer):
 
     @inject
-    def __init__(self, service: AbstractPubService, ws_service: AbstractWSPubService, *args, **kwargs):
+    def __init__(self, pub_manager: AbstractPubManager, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.service = service
-        self.ws_service = ws_service
+        self.pub_manager = pub_manager
 
     entity_id = serializers.IntegerField(required=True)
     entity_type = serializers.CharField(required=True, max_length=255)
@@ -76,9 +74,7 @@ class EntityUpdateWriteSerializer(serializers.Serializer):
             entity_operator = validated_data['entity_operator']
 
             # publish
-            created_at = round(time.time() * 1000)
-            self.service.pub(summit_id, entity_id, entity_type, entity_operator, created_at)
-            self.ws_service.pub(summit_id, entity_id, entity_type, entity_operator, created_at)
+            self.pub_manager.pub(summit_id, entity_id, entity_type, entity_operator, round(time.time() * 1000))
 
             create_snapshot_cancellable(summit_id)
 

@@ -4,14 +4,11 @@ import pika
 import logging
 import time
 import traceback
-
 from pika.exceptions import ConnectionClosedByBroker, AMQPChannelError, AMQPConnectionError
-
+from api.models import AbstractPubManager
 from api.tasks import create_snapshot_cancellable
 from api.utils import config
 from django_injector import inject
-from api.models.abstract_pub_service import AbstractPubService
-from api.models.abstract_ws_pub_service import AbstractWSPubService
 
 QUEUE_EVENT_NAME = 'App\\Jobs\\PublishScheduleEntityLifeCycleEvent'
 
@@ -20,10 +17,9 @@ class Command(BaseCommand):
     help = 'Runs Queue listener (RabbitMQ)'
 
     @inject
-    def __init__(self, service: AbstractPubService, ws_service: AbstractWSPubService, *args, **kwargs):
+    def __init__(self, pub_manager: AbstractPubManager, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.service = service
-        self.ws_service = ws_service
+        self.pub_manager = pub_manager
 
     def callback(self, channel, method, header, body):
         try:
@@ -43,11 +39,7 @@ class Command(BaseCommand):
             if entity_type == 'Summit':
                 summit_id = entity_id
 
-            self.service.pub(summit_id, entity_id, entity_type, entity_op, created_at)
-
-            # publish to WS
-
-            self.ws_service.pub(summit_id, entity_id, entity_type, entity_op, created_at)
+            self.pub_manager.pub(summit_id, entity_id, entity_type, entity_op, created_at)
 
             create_snapshot_cancellable(summit_id)
 

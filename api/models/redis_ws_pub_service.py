@@ -1,15 +1,12 @@
-from .abstract_ws_pub_service import AbstractWSPubService
+from .abstract_pub_service import AbstractPubService
 import logging
 from ..utils import config
 import traceback
 import redis
 import json
-from datetime import datetime
-import pytz
-import time
 
 
-class RedisWSPubService(AbstractWSPubService):
+class RedisWSPubService(AbstractPubService):
 
     def __init__(self):
         self.redis_client = None
@@ -34,13 +31,12 @@ class RedisWSPubService(AbstractWSPubService):
     def pub(self, summit_id: int, entity_id: int, entity_type: str, op: str, created_at:int):
         try:
             if self.redis_client:
-                now = datetime.utcnow().replace(tzinfo=pytz.UTC)
                 res = {
                     'summit_id': summit_id,
                     'entity_type': entity_type,
                     'entity_id': entity_id,
                     'entity_operator': op,
-                    'created_at': round(time.time() * 1000),
+                    'created_at': created_at,
                 }
                 self.redis_client.publish(config('REDIS_PUB.CHANNEL'), json.dumps(res))
         except:

@@ -6,8 +6,7 @@ import hashlib
 import boto3
 import base64
 import time
-
-from . import AbstractWSPubService, AbstractPubService
+from . import AbstractPubManager
 from .abstract_feeds_upload_service import AbstractFeedsUploadService
 from ..utils import config
 
@@ -22,10 +21,9 @@ S3_CacheControl = 'no-cache, no-store'
 
 class FeedsUploadService(AbstractFeedsUploadService):
 
-    def __init__(self, pub_service: AbstractPubService, ws_service: AbstractWSPubService):
+    def __init__(self, pub_manager:AbstractPubManager):
         super().__init__()
-        self.ws_service = ws_service
-        self.pub_service = pub_service
+        self.pub_manager = pub_manager
 
     @staticmethod
     def get_content_md5(data):
@@ -68,9 +66,7 @@ class FeedsUploadService(AbstractFeedsUploadService):
                     logging.getLogger('api').info(f'FeedsUploadService uploading {source_dir_path}/{path}')
 
             # publish
-            created_at = round(time.time() * 1000)
-            self.pub_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP, created_at)
-            self.ws_service.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP, created_at)
+            self.pub_manager.pub(summit_id, SCHEDULE_ENTITY_ID, SCHEDULE_ENTITY_TYPE, SCHEDULE_ENTITY_OP, round(time.time() * 1000))
 
             client.close()
         except Exception as e:
