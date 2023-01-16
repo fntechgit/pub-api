@@ -5,7 +5,7 @@ import traceback
 
 from celery import shared_task
 
-from api.models import RedisWSPubService
+from api.models import RedisWSPubService, PubManager, AblyPubService
 from api.models import SupaBasePubService
 from api.models.feeds_download_service import FeedsDownloadService
 from api.models.feeds_upload_service import FeedsUploadService
@@ -40,9 +40,17 @@ def upload_latest_completed(summit_id: int):
     logging.getLogger('api') \
         .debug(f'task {latest_completed_task.id} for summit_id {summit_id} is ready for upload stage')
 
-    feeds_upload_service = FeedsUploadService(SupaBasePubService(), RedisWSPubService())
+    pub_manager = PubManager()
+    pub_manager.add_service(SupaBasePubService())
+    pub_manager.add_service(RedisWSPubService())
+    pub_manager.add_service(AblyPubService())
+
+    feeds_upload_service = FeedsUploadService(pub_manager)
     pivot_dir_path = get_local_pivot_dir_path(summit_id, latest_completed_task.id)
     feeds_upload_service.upload(summit_id, pivot_dir_path)
+
+    logging.getLogger('api') \
+        .debug(f'task {latest_completed_task.id} for summit_id {summit_id} is uploaded')
 
     # nothing else to do with the rest of the downloads
     clean_up_tasks(summit_id)
