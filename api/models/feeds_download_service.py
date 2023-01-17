@@ -11,6 +11,7 @@ import requests
 from django_injector import inject
 
 from .abstract_feeds_download_service import AbstractFeedsDownloadService
+from .tasks_cache_wrapper import TaskStatus, TasksCacheWrapper
 from ..security.access_token_service import AccessTokenService
 from ..utils import config
 
@@ -173,7 +174,7 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             logging.getLogger('api').error(ex)
             raise Exception('__download_voteable_presentations error')
 
-    async def __dump_all_for_summit(self, summit_id: int, access_token: str, target_dir: str):
+    async def __dump_all_for_summit(self, summit_id: int, access_token: str, target_dir: str, task_id: str):
 
         logging.getLogger('api') \
             .info(f'FeedsDownloadService __dump_all_for_summit: summit_id {summit_id} saving files to {target_dir}')
@@ -219,11 +220,14 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
 
         self.__build_index(presentations, f'{target_dir}/presentations.idx.json')
 
-    def download(self, summit_id: int, target_dir: str):
+        if task_id != "0":
+            TasksCacheWrapper.update_task_status(summit_id, task_id, TaskStatus.DOWNLOADED)
+
+    def download(self, summit_id: int, target_dir: str, task_id: str):
         try:
             access_token = self.access_token_service.get_access_token()
             loop = asyncio.new_event_loop()
-            loop.run_until_complete(self.__dump_all_for_summit(summit_id, access_token, target_dir))
+            loop.run_until_complete(self.__dump_all_for_summit(summit_id, access_token, target_dir, task_id))
             loop.close()
             logging.getLogger('api').info(f'FeedsDownloadService download finished for summit_id {summit_id}')
         except Exception:

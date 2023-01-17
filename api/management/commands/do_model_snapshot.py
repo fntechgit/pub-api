@@ -42,7 +42,7 @@ class Command(BaseCommand):
         pivot_dir_path = get_local_pivot_dir_path(summit_id, "0")
 
         if op in [DOWNLOAD, FULL]:
-            self.feeds_download_service.download(summit_id, pivot_dir_path)
+            self.feeds_download_service.download(summit_id, pivot_dir_path, "0")
 
         if op in [UPLOAD, FULL]:
             self.feeds_upload_service.upload(summit_id, pivot_dir_path)

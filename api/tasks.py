@@ -21,8 +21,7 @@ def create_model_snapshot(self, summit_id: int):
 
     feeds_download_service = FeedsDownloadService(AccessTokenService())
     pivot_dir_path = get_local_pivot_dir_path(summit_id, self.request.id)
-    feeds_download_service.download(summit_id, pivot_dir_path)
-    TasksCacheWrapper.update_task_status(summit_id, self.request.id, TaskStatus.DOWNLOADED)
+    feeds_download_service.download(summit_id, pivot_dir_path, self.request.id)
     logging.getLogger('api').debug(f'task {self.request.id} for summit {summit_id}: download stage completed')
 
     upload_latest_completed(summit_id)
