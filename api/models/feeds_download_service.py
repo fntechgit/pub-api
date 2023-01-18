@@ -11,7 +11,7 @@ import requests
 from django_injector import inject
 
 from .abstract_feeds_download_service import AbstractFeedsDownloadService
-from .tasks_cache_wrapper import TaskStatus, TasksCacheWrapper
+from .tasks_cache_wrapper import TaskStatus, TasksCacheWrapper, dump_if_task_still_active, download_if_task_still_active
 from ..security.access_token_service import AccessTokenService
 from ..utils import config
 
@@ -23,7 +23,13 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
         super().__init__()
         self.access_token_service = access_token_service
 
-    def __build_index(self, collection: any, path: str):
+    @dump_if_task_still_active
+    def __build_json_file(self, data: any, path: str, summit_id: int, task_id: str):
+        with open(path, 'w', encoding='utf8') as outfile:
+            json.dump(data, outfile, separators=(',', ':'), ensure_ascii=False)
+
+    @dump_if_task_still_active
+    def __build_index(self, collection: any, path: str, summit_id: int, task_id: str):
         with open(path, 'w', encoding='utf8') as outfile:
             collection_idx = {}
             ix = 0
@@ -32,21 +38,25 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
                 ix = ix + 1
             json.dump(collection_idx, outfile, separators=(',', ':'), ensure_ascii=False)
 
-    async def __get_page(self, endpoint: str, params: any, page: int):
+    @download_if_task_still_active
+    async def __get_page(self, endpoint: str, params: any, page: int, task_id: str):
         params['page'] = page
         response = requests.get(endpoint, params=params)
         return response.json()
 
-    async def __get_remaining_items(self, endpoint: str, params: any, last_page: int):
-        result = await asyncio.gather(*[self.__get_page(endpoint, params, page) for page in range(2, last_page + 1)])
-        ordered_result = sorted(result, key=lambda d: d['current_page'])
+    async def __get_remaining_items(self, endpoint: str, params: any, last_page: int, task_id: str):
+        result = await asyncio.gather(*[self.__get_page(endpoint, params, page, task_id=task_id)
+                                        for page in range(2, last_page + 1)])
+        filtered_result = filter(None, result)
+        ordered_result = sorted(filtered_result, key=lambda d: d['current_page'])
         items = []
         for r in ordered_result:
             items += r['data']
 
         return items
 
-    async def __download_events(self, summit_id: int, access_token: str):
+    @download_if_task_still_active
+    async def __download_events(self, summit_id: int, access_token: str, task_id: str):
         logging.getLogger('api') \
             .info(f'FeedsDownloadService __download_events: summit_id {summit_id}')
         try:
@@ -65,7 +75,7 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
+                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'], task_id=task_id)
 
             end = time.time()
 
@@ -77,7 +87,8 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             logging.getLogger('api').error(ex)
             raise Exception('__download_events error')
 
-    async def __download_speakers(self, summit_id: int, access_token: str):
+    @download_if_task_still_active
+    async def __download_speakers(self, summit_id: int, access_token: str, task_id: str):
         logging.getLogger('api') \
             .info(f'FeedsDownloadService __download_speakers: summit_id {summit_id}')
         try:
@@ -93,7 +104,7 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
+                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'], task_id=task_id)
 
             end = time.time()
 
@@ -105,7 +116,8 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             logging.getLogger('api').error(ex)
             raise Exception('__download_speakers error')
 
-    async def __download_summit(self, summit_id: int, access_token: str):
+    @download_if_task_still_active
+    async def __download_summit(self, summit_id: int, access_token: str, task_id: str):
         logging.getLogger('api') \
             .info(f'FeedsDownloadService __download_summit: summit_id {summit_id}')
         try:
@@ -124,7 +136,8 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             logging.getLogger('api').error(ex)
             raise Exception('__download_summit error')
 
-    async def __download_summit_extra_questions(self, summit_id: int, access_token: str):
+    @download_if_task_still_active
+    async def __download_summit_extra_questions(self, summit_id: int, access_token: str, task_id: str):
         logging.getLogger('api') \
             .info(f'FeedsDownloadService __download_summit_extra_questions: summit_id {summit_id}')
         try:
@@ -141,14 +154,15 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
+                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'], task_id=task_id)
 
             return data
         except Exception as ex:
             logging.getLogger('api').error(ex)
             raise Exception('__download_summit_extra_questions error')
 
-    async def __download_voteable_presentations(self, summit_id: int, access_token: str):
+    @download_if_task_still_active
+    async def __download_voteable_presentations(self, summit_id: int, access_token: str, task_id: str):
         logging.getLogger('api') \
             .info(f'FeedsDownloadService __download_voteable_presentations: summit_id {summit_id}')
         try:
@@ -167,7 +181,7 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'])
+                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'], task_id=task_id)
 
             return data
         except Exception as ex:
@@ -185,11 +199,11 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             os.makedirs(target_dir)
 
         events, speakers, summit, extra_questions, presentations = await asyncio.gather(
-            self.__download_events(summit_id, access_token),
-            self.__download_speakers(summit_id, access_token),
-            self.__download_summit(summit_id, access_token),
-            self.__download_summit_extra_questions(summit_id, access_token),
-            self.__download_voteable_presentations(summit_id, access_token)
+            self.__download_events(summit_id=summit_id, access_token=access_token, task_id=task_id),
+            self.__download_speakers(summit_id=summit_id, access_token=access_token, task_id=task_id),
+            self.__download_summit(summit_id=summit_id, access_token=access_token, task_id=task_id),
+            self.__download_summit_extra_questions(summit_id=summit_id, access_token=access_token, task_id=task_id),
+            self.__download_voteable_presentations(summit_id=summit_id, access_token=access_token, task_id=task_id)
         )
 
         end = time.time()
@@ -197,28 +211,25 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
         logging.getLogger('api') \
             .info(f'FeedsDownloadService __dump_all_for_summit: execution time: {end - start} seconds')
 
-        with open(f'{target_dir}/events.json', 'w', encoding='utf8') as outfile:
-            json.dump(events, outfile, separators=(',', ':'), ensure_ascii=False)
+        self.__build_json_file(events, f'{target_dir}/events.json', summit_id=summit_id, task_id=task_id)
 
-        self.__build_index(events, f'{target_dir}/events.idx.json')
+        self.__build_index(events, f'{target_dir}/events.idx.json', summit_id=summit_id, task_id=task_id)
 
-        with open(f'{target_dir}/speakers.json', 'w', encoding='utf8') as outfile:
-            json.dump(speakers, outfile, separators=(',', ':'), ensure_ascii=False)
+        self.__build_json_file(speakers, f'{target_dir}/speakers.json', summit_id=summit_id, task_id=task_id)
 
-        self.__build_index(speakers, f'{target_dir}/speakers.idx.json')
+        self.__build_index(speakers, f'{target_dir}/speakers.idx.json', summit_id=summit_id, task_id=task_id)
 
-        with open(f'{target_dir}/summit.json', 'w', encoding='utf8') as outfile:
-            json.dump(summit, outfile, separators=(',', ':'), ensure_ascii=False)
+        self.__build_json_file(summit, f'{target_dir}/summit.json', summit_id=summit_id, task_id=task_id)
 
-        with open(f'{target_dir}/extra-questions.json', 'w', encoding='utf8') as outfile:
-            json.dump(extra_questions, outfile, separators=(',', ':'), ensure_ascii=False)
+        self.__build_json_file(
+            extra_questions, f'{target_dir}/extra-questions.json', summit_id=summit_id, task_id=task_id)
 
-        self.__build_index(extra_questions, f'{target_dir}/extra-questions.idx.json')
+        self.__build_index(
+            extra_questions, f'{target_dir}/extra-questions.idx.json', summit_id=summit_id, task_id=task_id)
 
-        with open(f'{target_dir}/presentations.json', 'w', encoding='utf8') as outfile:
-            json.dump(presentations, outfile, separators=(',', ':'), ensure_ascii=False)
+        self.__build_json_file(presentations, f'{target_dir}/presentations.json', summit_id=summit_id, task_id=task_id)
 
-        self.__build_index(presentations, f'{target_dir}/presentations.idx.json')
+        self.__build_index(presentations, f'{target_dir}/presentations.idx.json', summit_id=summit_id, task_id=task_id)
 
         if task_id != "0":
             TasksCacheWrapper.update_task_status(summit_id, task_id, TaskStatus.DOWNLOADED)
@@ -230,6 +241,6 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             loop.run_until_complete(self.__dump_all_for_summit(summit_id, access_token, target_dir, task_id))
             loop.close()
             logging.getLogger('api').info(f'FeedsDownloadService download finished for summit_id {summit_id}')
-        except Exception:
+        except Exception as ex:
             logging.getLogger('api').error(traceback.format_exc())
             raise Exception('FeedsDownloadService error')

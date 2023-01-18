@@ -1,9 +1,43 @@
 import sys
 import time
+from asyncio import Future
 from enum import Enum
 from typing import Optional, List
 
 from django.core.cache import cache
+
+
+def dump_if_task_still_active(func):
+    def wrapper(*args, **kwargs):
+        task_id = kwargs['task_id']
+
+        if task_id == "0":
+            func(*args, **kwargs)
+            return
+
+        task = TasksCacheWrapper.get_task_by_id(kwargs['summit_id'], task_id)
+        if task is not None and task.status == TaskStatus.DOWNLOADING:
+            func(*args, **kwargs)
+
+    return wrapper
+
+
+def download_if_task_still_active(func):
+    def wrapper(*args, **kwargs):
+        task_id = kwargs['task_id']
+
+        if task_id == "0":
+            return func(*args, **kwargs)
+
+        task = TasksCacheWrapper.get_task_by_id(kwargs['summit_id'], task_id)
+        if task is not None and task.status == TaskStatus.DOWNLOADING:
+            return func(*args, **kwargs)
+
+        res = Future()
+        res.set_result([])
+        return res
+
+    return wrapper
 
 
 class TaskStatus(Enum):
@@ -27,6 +61,13 @@ class TasksCacheWrapper:
         if tasks_info is None:
             return {}
         return dict(filter(lambda elem: elem[1].status in statuses, tasks_info.items()))
+
+    @staticmethod
+    def get_task_by_id(summit_id: int, task_id: str) -> Optional[TaskInfo]:
+        tasks_info = cache.get(summit_id)
+        if tasks_info is not None and task_id in tasks_info:
+            return tasks_info[task_id]
+        return None
 
     @staticmethod
     def get_latest_completed_task(summit_id: int) -> Optional[TaskInfo]:

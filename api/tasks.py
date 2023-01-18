@@ -16,7 +16,7 @@ from api.utils import config
 
 @shared_task(bind=True)
 def create_model_snapshot(self, summit_id: int):
-    logging.getLogger('api')\
+    logging.getLogger('api') \
         .debug(f'calling create_model_snapshot task (id: {self.request.id}) for summit {summit_id}...')
 
     feeds_download_service = FeedsDownloadService(AccessTokenService())
