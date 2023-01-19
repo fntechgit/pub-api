@@ -39,13 +39,13 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             json.dump(collection_idx, outfile, separators=(',', ':'), ensure_ascii=False)
 
     @download_if_task_still_active
-    async def __get_page(self, endpoint: str, params: any, page: int, task_id: str):
+    async def __get_page(self, endpoint: str, params: any, page: int, summit_id: int, task_id: str):
         params['page'] = page
         response = requests.get(endpoint, params=params)
         return response.json()
 
-    async def __get_remaining_items(self, endpoint: str, params: any, last_page: int, task_id: str):
-        result = await asyncio.gather(*[self.__get_page(endpoint, params, page, task_id=task_id)
+    async def __get_remaining_items(self, endpoint: str, params: any, last_page: int, summit_id: int, task_id: str):
+        result = await asyncio.gather(*[self.__get_page(endpoint, params, page, summit_id=summit_id, task_id=task_id)
                                         for page in range(2, last_page + 1)])
         filtered_result = filter(None, result)
         ordered_result = sorted(filtered_result, key=lambda d: d['current_page'])
@@ -75,7 +75,8 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'], task_id=task_id)
+                data = data + await self.__get_remaining_items(
+                    endpoint, params, resp['last_page'], summit_id=summit_id, task_id=task_id)
 
             end = time.time()
 
@@ -104,7 +105,8 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'], task_id=task_id)
+                data = data + await self.__get_remaining_items(
+                    endpoint, params, resp['last_page'], summit_id=summit_id, task_id=task_id)
 
             end = time.time()
 
@@ -154,7 +156,8 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'], task_id=task_id)
+                data = data + await self.__get_remaining_items(
+                    endpoint, params, resp['last_page'], summit_id=summit_id, task_id=task_id)
 
             return data
         except Exception as ex:
@@ -181,7 +184,8 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             resp = response.json()
             data = resp['data']
             if resp['current_page'] < resp['last_page']:
-                data = data + await self.__get_remaining_items(endpoint, params, resp['last_page'], task_id=task_id)
+                data = data + await self.__get_remaining_items(
+                    endpoint, params, resp['last_page'], summit_id=summit_id, task_id=task_id)
 
             return data
         except Exception as ex:
