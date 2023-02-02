@@ -68,4 +68,23 @@ python manage.py runserver
 
 sudo lsof -t -i tcp:8000 | xargs kill -9
 
-# dump data 
+# queue listener
+
+python manage.py listener
+
+# start Celery worker process
+
+````
+celery -A backend worker -l info
+````
+# start show model feed command
+
+````
+python manage.py do_model_snapshot SUMMIT_ID -o=OPERATION_MODE
+````
+
+**OPERATION_MODE**:
+- **download**: fetch the show model from summit-api to a local folder
+- **upload**: upload all the json files in the local folder to S3
+- **full**: download + upload
+

@@ -1,36 +1,21 @@
 from rest_framework import serializers
-from ..models import AbstractPubService
+from ..models import AbstractPubManager
 import logging
+import time
+
 from ..utils.inject import inject
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.serializers import ValidationError
-import redis
-import json
-import traceback
-from ..utils import config
+from api.tasks import create_snapshot_cancellable
 
 
 # Serializer without model
 class EntityUpdateWriteSerializer(serializers.Serializer):
 
     @inject
-    def __init__(self, service: AbstractPubService, *args, **kwargs):
+    def __init__(self, pub_manager: AbstractPubManager, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.service = service
-        self.redis_client = None
-        try:
-            self.redis_client = redis.StrictRedis \
-                    (
-                    config("REDIS_PUB.HOST"),
-                    config("REDIS_PUB.PORT"),
-                    password=config("REDIS_PUB.PASSWORD", None),
-                    charset="utf-8",
-                    decode_responses=True,
-                    db=config("REDIS_PUB.DB")
-                )
-        except:
-            self.redis_client = None
-            logging.getLogger('api').warning(traceback.format_exc())
+        self.pub_manager = pub_manager
 
     entity_id = serializers.IntegerField(required=True)
     entity_type = serializers.CharField(required=True, max_length=255)
@@ -87,14 +72,11 @@ class EntityUpdateWriteSerializer(serializers.Serializer):
             entity_id = validated_data['entity_id']
             entity_type = validated_data['entity_type']
             entity_operator = validated_data['entity_operator']
-            res = self.service.pub(summit_id, entity_id, entity_type, entity_operator)
-            if not res:
-                raise Exception("SUPABASE Exception")
 
-            # publish to redis
+            # publish
+            self.pub_manager.pub(summit_id, entity_id, entity_type, entity_operator, round(time.time() * 1000))
 
-            if self.redis_client:
-                self.redis_client.publish(config('REDIS_PUB.CHANNEL'), json.dumps(res))
+            create_snapshot_cancellable(summit_id)
 
             return {"summit_id": summit_id,
                     "entity_id": entity_id,
