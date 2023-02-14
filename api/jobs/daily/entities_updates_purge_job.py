@@ -15,7 +15,8 @@ class Job(DailyJob):
     def execute(self, service: AbstractPubService):
         try:
             with FileLock(self.__class__, False):
+                logging.getLogger('jobs').debug('calling supabase_maintenance_scheduled_job.execute')
                 res = service.purge_entity_updates(int(config("SUMMIT_ENTITIES_UPDATE_PURGE_HOURS_FROM_BACKWARD")))
-                logging.getLogger('api').info(f'cron supabase_maintenance_scheduled_job: {res} records deleted')
+                logging.getLogger('jobs').info(f'cron supabase_maintenance_scheduled_job: {res} records deleted')
         except:
-            logging.getLogger('api').error(traceback.format_exc())
+            logging.getLogger('jobs').error(traceback.format_exc())
