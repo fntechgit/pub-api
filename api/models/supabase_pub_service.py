@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from .abstract_pub_service import AbstractPubService
 from supabase import create_client, Client
 import logging
@@ -22,7 +23,7 @@ class SupaBasePubService(AbstractPubService):
         if self.supabase is not None:
             self.supabase = None
 
-    def pub(self, summit_id: int, entity_id: int, entity_type: str, op: str, created_at:int):
+    def pub(self, summit_id: int, entity_id: int, entity_type: str, op: str, created_at: int):
         try:
             result = self.supabase \
                 .table("summit_entity_updates").insert(
@@ -33,3 +34,15 @@ class SupaBasePubService(AbstractPubService):
         except:
             logging.getLogger('api').error(traceback.format_exc())
             raise Exception('SUPABASE error')
+
+    def purge_entity_updates(self, hours_from_backward: int):
+        try:
+            date_time_from_backward = \
+                round((datetime.today() - timedelta(hours=hours_from_backward)).timestamp() * 1000)
+
+            result = self.supabase.table("summit_entity_updates").delete().lte("created_at", date_time_from_backward).execute()
+
+            return len(result.data)
+        except:
+            logging.getLogger('api').error(traceback.format_exc())
+            return 0

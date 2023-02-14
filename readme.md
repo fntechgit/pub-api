@@ -88,3 +88,7 @@ python manage.py do_model_snapshot SUMMIT_ID -o=OPERATION_MODE
 - **upload**: upload all the json files in the local folder to S3
 - **full**: download + upload
 
+
+# run job
+
+python manage.py runjob entities_updates_purge_job
