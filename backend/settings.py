@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_crontab',
     'django_filters',
     'django_extensions',
     'django_injector',
@@ -383,3 +384,5 @@ STORAGE = {
 DEFAULT_FILE_STORAGE = os.getenv('STATICFILES_STORAGE')
 
 ABLY_API_KEY = os.getenv('ABLY_API_KEY')
+
+SUMMIT_ENTITIES_UPDATE_PURGE_HOURS_FROM_BACKWARD = os.getenv('SUMMIT_ENTITIES_UPDATE_PURGE_HOURS_FROM_BACKWARD', 24)

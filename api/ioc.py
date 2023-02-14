@@ -1,4 +1,6 @@
 from injector import Module, singleton
+
+from api.models import AbstractPubService
 from api.models.abstract_feeds_upload_service import AbstractFeedsUploadService
 from api.models.abstract_feeds_download_service import AbstractFeedsDownloadService
 from api.models.feeds_download_service import FeedsDownloadService
@@ -19,8 +21,11 @@ class ApiAppModule(Module):
         access_token_service = AccessTokenService()
         binder.bind(AbstractAccessTokenService, to=access_token_service, scope=singleton)
 
+        supabase_pub_service = SupaBasePubService()
+        binder.bind(AbstractPubService, to=supabase_pub_service, scope=singleton)
+
         pub_manager = PubManager()
-        pub_manager.add_service(SupaBasePubService())
+        pub_manager.add_service(supabase_pub_service)
         pub_manager.add_service(RedisWSPubService())
         pub_manager.add_service(AblyPubService())
 
