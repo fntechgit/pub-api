@@ -31,13 +31,17 @@ class Command(BaseCommand):
             # entity_type
             # entity_operator (INSERT, UPDATE, DELETE)
             entity_op = data['entity_operator']
-            summit_id = data['summit_id']
-            entity_id = data['entity_id']
+            summit_id = int(data['summit_id'])
+            entity_id = int(data['entity_id'])
             entity_type = data['entity_type']
             created_at = round(time.time() * 1000)
             # trigger celery job to rebuild CDN json files
             if entity_type == 'Summit':
                 summit_id = entity_id
+
+            if not summit_id:
+                logging.getLogger('listener').info('summit id is zero, skipping processing.')
+                return
 
             self.pub_manager.pub(summit_id, entity_id, entity_type, entity_op, created_at)
 
