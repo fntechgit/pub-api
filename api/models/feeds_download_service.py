@@ -65,7 +65,7 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
                 "access_token": access_token,
                 "per_page": config('CONTENT_SNAPSHOT_DOWNLOAD_PAGE_SIZE', 50),
                 "page": 1,
-                "expand": 'slides, links, videos, media_uploads, type, track, track.allowed_access_levels, '
+                "expand": 'slides, links, videos, media_uploads, type, track, track.subtracks, track.allowed_access_levels, '
                           'location, location.venue, location.floor, speakers, moderator, sponsors, '
                           'current_attendance, groups, rsvp_template, tags',
             }
@@ -128,7 +128,7 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
                 params={
                     "access_token": access_token,
                     "t": datetime.now(),
-                    "expand": 'event_types,tracks,track_groups,presentation_levels,locations.rooms,locations.floors,'
+                    "expand": 'event_types,tracks,tracks.subtracks, track_groups,presentation_levels,locations.rooms,locations.floors,'
                               'order_extra_questions.values,schedule_settings,schedule_settings.filters,'
                               'schedule_settings.pre_filters',
                 }
