@@ -65,9 +65,13 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
                 "access_token": access_token,
                 "per_page": config('CONTENT_SNAPSHOT_DOWNLOAD_PAGE_SIZE', 50),
                 "page": 1,
-                "expand": 'slides, links, videos, media_uploads, type, track, track.subtracks, track.allowed_access_levels, '
-                          'location, location.venue, location.floor, speakers, moderator, sponsors, '
-                          'current_attendance, groups, rsvp_template, tags',
+                "expand": 'slides, links, videos, media_uploads, type, track, track.subtracks, '
+                          'track.allowed_access_levels, location, location.venue, location.floor, speakers, moderator, '
+                          'sponsors, current_attendance, groups, rsvp_template, tags',
+                "relations": 'speakers.badge_features, speakers.affiliations, speakers.languages, '
+                             'speakers.other_presentation_links, speakers.areas_of_expertise, '
+                             'speakers.travel_preferences, speakers.organizational_roles, '
+                             'speakers.all_presentations, speakers.all_moderated_presentations'
             }
             start = time.time()
 
@@ -97,7 +101,9 @@ class FeedsDownloadService(AbstractFeedsDownloadService):
             params = {
                 "access_token": access_token,
                 "page": 1,
-                "per_page": config('CONTENT_SNAPSHOT_DOWNLOAD_PAGE_SIZE', 50)
+                "per_page": config('CONTENT_SNAPSHOT_DOWNLOAD_PAGE_SIZE', 50),
+                "relations": 'badge_features,affiliations,languages,other_presentation_links,areas_of_expertise,'
+                             'travel_preferences,organizational_roles,all_presentations,all_moderated_presentations',
             }
             start = time.time()
 
